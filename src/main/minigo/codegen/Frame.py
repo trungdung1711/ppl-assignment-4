@@ -1,4 +1,6 @@
 from Utils import *
+# 4/24/2025
+from CodeGenError import IllegalRuntimeException
 
 class Frame():
     def __init__(self, name, returnType):

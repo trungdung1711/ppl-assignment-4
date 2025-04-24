@@ -4,6 +4,9 @@ from StaticError import *
 import CodeGenerator as cgen
 from MachineCode import JasminCode
 
+# NOTE
+from CodeGenError import IllegalOperandException
+
 
 
 class Emitter():
