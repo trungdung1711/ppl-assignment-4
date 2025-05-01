@@ -9,10 +9,12 @@
 
 .bytecode 65.0
 .source MiniGoClass.java
-.class public global/MiniGoClass
+.class public struct/MiniGoClass
 .super java/lang/Object
 
-.field public static global I
+.field public name Ljava/lang/String;
+.field public age I
+.field public money F
 
 .method public <init>()V
   .limit stack 1
@@ -23,19 +25,10 @@
   4: return
 .end method
 
-.method public static main([Ljava/lang/String;)V
+.method public doMethod()V
   .limit stack 0
   .limit locals 1
-  .line 10
+  .line 11
   0: return
-.end method
-
-.method static <clinit>()V
-  .limit stack 1
-  .limit locals 0
-  .line 5
-  0: bipush 100
-  2: putstatic global/MiniGoClass/global I
-  5: return
 .end method
 

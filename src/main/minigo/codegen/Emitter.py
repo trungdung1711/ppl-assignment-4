@@ -24,7 +24,8 @@ class MType:
     #     return "MType([" + ",".join(str(x) for x in self.partype) + "]," + str(self.rettype) + ")"
 
 
-class ClassType(Type):
+# skip inheritence, because it is not quite important
+class ClassType():
     def __init__(self, name):
         #value: Id
         self.name = name

@@ -9,10 +9,8 @@
 
 .bytecode 65.0
 .source MiniGoClass.java
-.class public global/MiniGoClass
+.class public nested/MiniGoClass
 .super java/lang/Object
-
-.field public static global I
 
 .method public <init>()V
   .limit stack 1
@@ -24,18 +22,25 @@
 .end method
 
 .method public static main([Ljava/lang/String;)V
-  .limit stack 0
-  .limit locals 1
-  .line 10
-  0: return
-.end method
-
-.method static <clinit>()V
-  .limit stack 1
-  .limit locals 0
+  .limit stack 2
+  .limit locals 4
   .line 5
   0: bipush 100
-  2: putstatic global/MiniGoClass/global I
-  5: return
+  2: istore_1
+  .line 7
+  3: iload_1
+  4: bipush 100
+  6: iadd
+  7: istore_2
+  .line 8
+  8: iload_1
+  9: iload_2
+  10: iadd
+  11: istore_3
+  .line 10
+  12: bipush 100
+  14: istore_2
+  .line 11
+  15: return
 .end method
 

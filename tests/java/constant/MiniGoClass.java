@@ -1,8 +1,8 @@
-package global;
+package constant;
 
 public class MiniGoClass {
-	// Global variable - static
-	public static int global = 100;
+	// global const
+	public static final int constant = 100;
 
 
 	public static void main(String[] args) {

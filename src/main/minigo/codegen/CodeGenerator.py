@@ -133,8 +133,12 @@ class CodeGenerator(BaseVisitor,Utils):
         self.emit = Emitter(dir_ + "/" + self.className + ".j")
         
         # testing - may be used for global things
-        self.global_emitter = Emitter(dir_ + '/' + 'GlobalClass' + '.j')
-        self.global_emitter.printout('weird thing')
+        # NOTE: successfully generate multiple classes
+        # self.global_emitter = Emitter(dir_ + '/' + 'GlobalClass' + '.j')
+        # self.global_emitter.printout(self.global_emitter.emitPROLOG('GlobalClass', "java.lang.Object"))
+        # self.global_emitter.printout(self.global_emitter.emitEPILOG())
+
+
         self.visit(ast, gl)
 
     # NOTE:
