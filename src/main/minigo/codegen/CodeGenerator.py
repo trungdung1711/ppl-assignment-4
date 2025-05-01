@@ -6,16 +6,40 @@
  *
 '''
 from Utils import *
-from StaticCheck import *
-from StaticError import *
-from Emitter import Emitter
+# from StaticCheck import *
+# 5/2/2025
+# instead of StaticCheck
+from Visitor import *
+# from Utils import Utils
+from AST import *
+
+# from StaticError import *
+from Emitter import Emitter, MType, ClassType
 from Frame import Frame
 from abc import ABC, abstractmethod
 from functools import reduce
 
 
+####################################################
+# @idea from: https://github.com/huynhtuandat05december/CSE-PPL
+
+# I am tired to implement a new data structure
+# for this assignment because the framework is tightly
+# coupled with the [Frame, Emitter]
+# thus we would rely on this whole framework
+# of the teacher to save the time, and note that
+# This is not the intermediate code generation
+# we are just generate the assembly-like java byte
+# code, in the real compiler, the intermediate code
+# is an internal representation used for optimization
+# and code generation for the back-end,
+# intermediate code allows us to have different
+# front-end, but same back-end - a bridge between
+# front-end and back-end - 5/2/2025
+####################################################
 class Val(ABC):
     pass
+
 
 class Index(Val):
     def __init__(self, value):
@@ -23,19 +47,54 @@ class Index(Val):
 
         self.value = value
 
+
 class CName(Val):
     def __init__(self, value,isStatic=True):
         #value: String
         self.isStatic = isStatic
         self.value = value
 
-class ClassType(Type):
-    def __init__(self, name):
-        #value: Id
+
+####################################################
+# ADDED CLASS
+# Exist in StaticCheck?
+
+class Symbol:
+    def __init__(self,name,mtype,value = None):
         self.name = name
+        self.mtype = mtype
+        self.value = value
+
+    # def __str__(self):
+    #     return "Symbol(" + str(self.name) + "," + str(self.mtype) + ("" if self.value is None else "," + str(self.value)) + ")"
+
+
+class SubBody():
+    def __init__(self, frame, sym):
+        self.frame = frame
+        self.sym = sym
+
+
+class Access():
+    def __init__(self, frame, sym, isLeft, isFirst=False):
+        self.frame = frame
+        self.sym = sym
+        self.isLeft = isLeft
+        self.isFirst = isFirst
+####################################################
 
 
 ####################################################
+# 
+####################################################
+class FirstPass(BaseVisitor):
+    pass
+
+
+####################################################
+# NOTE: NO SEMANTIC ERROR AT THIS POINT, everything
+# is correct, just consider run-time error
+
 # Our task is to generate assembly-like java byte
 # code which will be executed by JVM, 
 # NOTE that the run-time Java Stack only comes in 
@@ -53,6 +112,7 @@ class CodeGenerator(BaseVisitor,Utils):
         self.astTree = None
         self.path = None
         self.emit = None
+        self.global_emitter = None
 
     def init(self):
         mem = [
@@ -67,7 +127,14 @@ class CodeGenerator(BaseVisitor,Utils):
         gl = self.init()
         self.astTree = ast
         self.path = dir_
+        # for struct -> class -> new file -> new emitter
+        # for struct (scatter)
+        # for interface -> interface -> new file -> new emitter
         self.emit = Emitter(dir_ + "/" + self.className + ".j")
+        
+        # testing - may be used for global things
+        self.global_emitter = Emitter(dir_ + '/' + 'GlobalClass' + '.j')
+        self.global_emitter.printout('weird thing')
         self.visit(ast, gl)
 
     # NOTE:

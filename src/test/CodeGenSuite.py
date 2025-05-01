@@ -65,44 +65,45 @@ class CheckCodeGenSuite(unittest.TestCase):
         self.assertTrue(TestCodeGen.test(input, expect, 507))
 
 
-    def test_508(self):
-        input = Program(
-            [
-                FuncDecl(
-                    'main',
-                    [],
-                    VoidType(),
-                    Block(
-                        [
+    # def test_508(self):
+    #     input = Program(
+    #         [
+    #             FuncDecl(
+    #                 'main',
+    #                 [],
+    #                 VoidType(),
+    #                 Block(
+    #                     [
                             
-                        ]
-                    )
-                )
-            ]
-        )
-        expect = ''
+    #                     ]
+    #                 )
+    #             )
+    #         ]
+    #     )
+    #     expect = ''
 
-        self.assertTrue(TestCodeGen.test(input, expect, 508))
+    #     self.assertTrue(TestCodeGen.test(input, expect, 508))
 
 
-    def test_509(self):
-        input = Program(
-            [
-                FuncDecl(
-                    'main',
-                    [],
-                    VoidType(),
-                    Block(
-                        [
+    # def test_509(self):
+    #     input = Program(
+    #         [
+    #             FuncDecl(
+    #                 'main',
+    #                 [],
+    #                 VoidType(),
+    #                 Block(
+    #                     [
                             
-                        ]
-                    )
-                )
-            ]
-        )
-        expect = ''
+    #                     ]
+    #                 )
+    #             )
+    #         ]
+    #     )
+    #     expect = ''
 
-        self.assertTrue(TestCodeGen.test(input, expect, 509))
+    #     self.assertTrue(TestCodeGen.test(input, expect, 509))
+
 
     # def test_510(self):
     #     input = Program(

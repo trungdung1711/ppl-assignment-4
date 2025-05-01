@@ -1,11 +1,33 @@
 from Utils import *
-from StaticCheck import *
-from StaticError import *
-import CodeGenerator as cgen
+# 5/2/2025, removing all static checking
+# from StaticCheck import *
+# from StaticError import *
+# import CodeGenerator as cgen
 from MachineCode import JasminCode
 
 # NOTE
+# 5/2/2025, using MType in CodeGenerator
+# fixing circular dependency of code generation
 from CodeGenError import IllegalOperandException
+# from CodeGenerator import MType
+from AST import * 
+
+
+class MType:
+    def __init__(self,partype,rettype):
+        self.partype = partype
+        self.rettype = rettype
+
+    # Can cause error in getJVMType
+    # Mtype is in StaticCheck -> wrong
+    # def __str__(self):
+    #     return "MType([" + ",".join(str(x) for x in self.partype) + "]," + str(self.rettype) + ")"
+
+
+class ClassType(Type):
+    def __init__(self, name):
+        #value: Id
+        self.name = name
 
 
 
@@ -15,6 +37,9 @@ class Emitter():
         self.buff = list()
         self.jvm = JasminCode()
 
+    ###############################
+    # NOTE: Must modify
+    ###############################
     def getJVMType(self, inType):
         typeIn = type(inType)
         if typeIn is IntType:
@@ -27,7 +52,7 @@ class Emitter():
             return "[" + self.getJVMType(inType.eleType)
         elif typeIn is MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
-        elif typeIn is cgen.ClassType:
+        elif typeIn is ClassType:
             return "L" + inType.name + ";"
         else:
             return str(typeIn)
@@ -36,7 +61,7 @@ class Emitter():
         typeIn = type(inType)
         if typeIn is IntType:
             return "int"
-        elif typeIn is cgen.StringType:
+        elif typeIn is StringType:
             return "java/lang/String"
         elif typeIn is VoidType:
             return "void"
@@ -102,7 +127,7 @@ class Emitter():
         frame.pop()
         if type(in_) is IntType:
             return self.jvm.emitIALOAD()
-        elif type(in_) is cgen.ArrayType or type(in_) is cgen.ClassType or type(in_) is StringType:
+        elif type(in_) is ArrayType or type(in_) is ClassType or type(in_) is StringType:
             return self.jvm.emitAALOAD()
         else:
             raise IllegalOperandException(str(in_))
@@ -117,7 +142,7 @@ class Emitter():
         frame.pop()
         if type(in_) is IntType:
             return self.jvm.emitIASTORE()
-        elif type(in_) is cgen.ArrayType or type(in_) is cgen.ClassType or type(in_) is StringType:
+        elif type(in_) is ArrayType or type(in_) is ClassType or type(in_) is StringType:
             return self.jvm.emitAASTORE()
         else:
             raise IllegalOperandException(str(in_))
@@ -149,7 +174,7 @@ class Emitter():
         frame.push()
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
-        elif type(inType) is cgen.ArrayType or type(inType) is cgen.ClassType or type(inType) is StringType:
+        elif type(inType) is ArrayType or type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitALOAD(index)
         else:
             raise IllegalOperandException(name)
@@ -181,7 +206,7 @@ class Emitter():
 
         if type(inType) is IntType:
             return self.jvm.emitISTORE(index)
-        elif type(inType) is cgen.ArrayType or type(inType) is cgen.ClassType or type(inType) is StringType:
+        elif type(inType) is ArrayType or type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitASTORE(index)
         else:
             raise IllegalOperandException(name)
