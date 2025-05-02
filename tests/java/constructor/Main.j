@@ -9,15 +9,24 @@
 
 .bytecode 65.0
 .source Main.java
-.class public Main
+.class public constructor/Main
 .super java/lang/Object
 
 .method public <init>()V
-  .limit stack 1
-  .limit locals 1
-  .line 1
+  .limit stack 2
+  .limit locals 3
+  .line 4
   0: aload_0
   1: invokespecial java/lang/Object/<init>()V
-  4: return
+  .line 5
+  4: bipush 10
+  6: istore_1
+  .line 6
+  7: iload_1
+  8: bipush 10
+  10: iadd
+  11: istore_2
+  .line 7
+  12: return
 .end method
 

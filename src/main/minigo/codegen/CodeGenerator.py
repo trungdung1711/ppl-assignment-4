@@ -1,3 +1,4 @@
+# 2210573
 '''
  *   @author Nguyen Hua Phung
  *   @version 1.0
@@ -59,11 +60,19 @@ class CName(Val):
 # ADDED CLASS
 # Exist in StaticCheck?
 
+####################################################
+# In the case of Go (help to prevent semantic meaning):
+# Object (named thing):
+# - Var
+# - Const
+# - TypeName    - no need (global)
+# - Func        - no need (global)
+####################################################
 class Symbol:
     def __init__(self,name,mtype,value = None):
-        self.name = name
-        self.mtype = mtype
-        self.value = value
+        self.name = name        # name of this
+        self.mtype = mtype      # type of Var or Const
+        self.value = value      # index or CName
 
     # def __str__(self):
     #     return "Symbol(" + str(self.name) + "," + str(self.mtype) + ("" if self.value is None else "," + str(self.value)) + ")"
@@ -252,22 +261,64 @@ class CodeGenerator(BaseVisitor,Utils):
         self.emit.printout(self.emit.emitLABEL(env['frame'].getEndLabel(), env['frame']))
         env['frame'].exitScope()
         return o
+    
+
+    def visitExpression(self, ast, o):
+        pass
 
 
+    # normal expr
+    def visitIntLiteral(self, ast, o):
+        return self.emit.emitPUSHICONST(ast.value, o['frame']), IntType()
+
+
+    # normal expr
+    def visitFloatLiteral(self, ast, o):
+        return None
+    
+
+    # normal expr
+    def visitBinaryOp(self, param):
+        return None
+
+
+    # normal expr
+    def visitUnaryOp(self, param):
+        return None
+    
+
+    # normal expr
+    def visitBooleanLiteral(self, param):
+        return None
+
+
+    # normal expr
+    def visitStringLiteral(self, param):
+        return None
+
+
+    # normal expr
+    def visitArrayLiteral(self, param):
+        return None
+    
+
+    # normal expr
+    def visitStructLiteral(self, param):
+        return None
+
+
+    # normal expr
+    def visitNilLiteral(self, param):
+        return None
+
+
+    # expr + type (search in symbol for expr, type -> get?)
     def visitId(self, ast, o):
         sym = next(filter(lambda x: x.name == ast.name, [j for i in o['env'] for j in i]),None)
         if type(sym.value) is Index:
             return self.emit.emitREADVAR(ast.name, sym.mtype, sym.value.value, o['frame']),sym.mtype
         else:         
             return self.emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o['frame']),sym.mtype
-
-
-    def visitIntLiteral(self, ast, o):
-        return self.emit.emitPUSHICONST(ast.value, o['frame']), IntType()
-    
-
-    def visitFloatLiteral(self, ast, o):
-        return None
     
 
     def visitConstDecl(self, param):
@@ -346,41 +397,20 @@ class CodeGenerator(BaseVisitor,Utils):
         return None
 
 
-    def visitBinaryOp(self, param):
-        return None
-
-
-    def visitUnaryOp(self, param):
-        return None
-
-
+    # expr + stmt
     def visitMethCall(self, param):
         return None
 
 
+    # expr + stmt
     def visitArrayCell(self, param):
         return None
 
 
+    # expr + stmt
     def visitFieldAccess(self, param):
         return None
+    
 
-
-    def visitBooleanLiteral(self, param):
-        return None
-
-
-    def visitStringLiteral(self, param):
-        return None
-
-
-    def visitArrayLiteral(self, param):
-        return None
-
-
-    def visitStructLiteral(self, param):
-        return None
-
-
-    def visitNilLiteral(self, param):
-        return None
+    def visitParamDecl(self, ast, o):
+        pass

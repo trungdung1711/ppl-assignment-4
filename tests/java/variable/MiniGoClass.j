@@ -9,7 +9,7 @@
 
 .bytecode 65.0
 .source MiniGoClass.java
-.class public nested/MiniGoClass
+.class public variable/MiniGoClass
 .super java/lang/Object
 
 .method public <init>()V
@@ -21,32 +21,13 @@
   4: return
 .end method
 
-.method public static main([Ljava/lang/String;)V
-  .limit stack 2
-  .limit locals 6
-  .line 5
-  0: aload_0
-  1: astore_1
+.method public static doSomething()V
+  .limit stack 1
+  .limit locals 2
   .line 6
-  2: bipush 100
-  4: istore_2
-  .line 8
-  5: iload_2
-  6: bipush 100
-  8: iadd
-  9: istore_3
+  0: bipush 10
+  2: istore_0
   .line 9
-  10: iload_2
-  11: iload_3
-  12: iadd
-  13: istore 4
-  .line 10
-  15: iload 4
-  17: istore 5
-  .line 12
-  19: bipush 100
-  21: istore_3
-  .line 13
-  22: return
+  3: return
 .end method
 
