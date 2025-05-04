@@ -104,11 +104,8 @@ class FirstPass(BaseVisitor):
         # self.interface_emitters = dict()
 
 
-    def go(self, ast):
-        return self.visit(self.ast, None)
-    
-
-    def collect(self):
+    def go(self):
+        self.visit(self.ast, None)
         return self.class_emitters
 
 
@@ -128,6 +125,22 @@ class FirstPass(BaseVisitor):
         name = ast.name
         emitter = Emitter(self.directory + '/' + name + '.j')
         self.class_emitters[name] = emitter
+
+
+    def visitMethodDecl(self, ast, o):
+        pass
+
+
+    def visitFuncDecl(self, ast, o):
+        pass
+
+
+    def visitVarDecl(self, ast, o):
+        pass
+
+
+    def visitConstDecl(self, ast, o):
+        pass
 
 
 class SecondPass(BaseVisitor):
@@ -172,7 +185,7 @@ class SecondPass(BaseVisitor):
             # -> semantic checking prevent it, no assignment like that
             # and implements that is totally OK (all), might be others will prevent
             # that -> only checking for the dimention
-            if type(t1.eleType) is not type(t2.eleType):
+            if not SecondPass.identical(t1.eleType, t2.eleType):
                 return False
             if len(t1.dimens) != len(t2.dimens):
                 return False
@@ -226,23 +239,23 @@ class SecondPass(BaseVisitor):
             return all(SecondPass.identical(t1, t2) for t1, t2 in zip(m1.params, m2.params))
 
 
-
     def __init__(self, ast):
+        self.ast         = ast
         self.structs     = dict()    # name - list[methods]
         self.interfaces  = dict()    # name - list[methods]
 
         self.result      = dict()    # name - list[names]
 
 
-    def go(self, ast):
-        self.visit(ast)
+    def go(self):
+        self.visit(self.ast, None)
         self.check()
         return self.result
     
 
     # for debugging
     def debug_print_result(self):
-        for struct, interfaces in self.result:
+        for struct, interfaces in self.result.items():
             if interfaces:
                 joined = ", ".join(interfaces)
                 print(f"{struct}: {joined}")
@@ -262,6 +275,8 @@ class SecondPass(BaseVisitor):
 
         for struct, smethods in self.structs.items():
             for interface, imethods in self.interfaces.items():
+                # debug
+                # print(f'{struct} is being checked with {interface}')
                 if SecondPass.a_implements_b(smethods, imethods):
                     self.result[struct].add(interface)
 
@@ -281,6 +296,8 @@ class SecondPass(BaseVisitor):
         # if not -> false
         Aname_set = set([method.name for method in Amethods])
         Bname_set = set([method.name for method in Bmethods])
+        # debug
+        # print(f'Methods of struct {Aname_set} and Methods of interface {Bname_set}')
         if not Bname_set.issubset(Aname_set):
             return False
         
@@ -288,11 +305,17 @@ class SecondPass(BaseVisitor):
         # check the signature
         # loop through the interface's method
         # and check for the struct methods
-        def method_check(acc, cur):
-            method = next(filter(lambda method: method.name == cur.name, Amethods), None)
-            # checking the signature of both methods
-            acc.append(SecondPass.same_signature(cur, method))
-        return all(reduce(method_check, Bmethods, []))
+        # def method_check(acc, cur):
+        #     method = next(filter(lambda method: method.name == cur.name, Amethods), None)
+        #     # checking the signature of both methods
+        #     acc.append(SecondPass.same_signature(cur, method))
+        #     return acc
+        # return all(reduce(method_check, Bmethods, []))
+    
+        return all(
+            SecondPass.same_signature(method, next(filter(lambda x : x.name == method.name, Amethods), None))
+            for method in Bmethods
+        )
 
 
     def visitProgram(self, ast, o):
@@ -305,18 +328,18 @@ class SecondPass(BaseVisitor):
 
 
     def visitMethodDecl(self, ast, o):
-        class_name = ast.receiver
-        if class_name is not self.structs:
+        class_name = ast.recType.name
+        if class_name not in self.structs:
             # first time
             self.structs[class_name] = []
         # contain the key
         # 1. create the method
         # 2. append to to the list Method
-        self.structs[class_name].apend(self.visit(ast.fun, None))
+        self.structs[class_name].append(self.visit(ast.fun, None))
 
 
     def visitFuncDecl(self, ast, o):
-        param_types = reduce(lambda acc, cur: acc.append(self.visit(cur, None)), ast.params, [])
+        param_types = [self.visit(param, None) for param in ast.params]
         return SecondPass.Method(ast.name, param_types, ast.retType)
 
 
@@ -329,20 +352,28 @@ class SecondPass(BaseVisitor):
         # we would know all the methods of this interface
         # 2. just allocate the list immediately
         # 3. visit each of the prototype to get the method
-        method_lists = reduce(lambda acc, cur: acc.append(self.visit(cur, None)), ast.methods, [])
+        # print(f'Visit interface {ast.name}')
+        method_lists = [self.visit(method, None) for method in ast.methods]
         self.interfaces[ast.name] = method_lists
 
 
     def visitPrototype(self, ast, o):
-        return SecondPass.Method(ast.name, ast.params, ast.reType)
+        return SecondPass.Method(ast.name, ast.params, ast.retType)
+
+
+    def visitVarDecl(self, ast, o):
+        pass
+
+
+    def visitConstDecl(self, ast, o):
+        pass
 
 
 
 class ThirdPass(BaseVisitor):
     def __init__(self, ast):
         self.class_emitters     = None
-        self.interface_emitters = None
-        pass
+        # self.interface_emitters = None
 
 
     def go(self, ast):
@@ -447,14 +478,14 @@ class CodeGenerator(BaseVisitor, Utils):
         self.emit = None
         # added
 
-        self.global_emitter = None
+        # self.global_emitter = None
         self.class_emitters = None
-        self.interface_emitters = None
+        # self.interface_emitters = None
 
 
     def init(self, ast, dir):
         self.main_emitter   = Emitter(dir + '/' + self.className + '.j')
-        self.global_emitter = Emitter(dir + '/' + 'GlobalClass'  + '.j')
+        # self.global_emitter = Emitter(dir + '/' + 'GlobalClass'  + '.j')
         
         mem = [
             Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
@@ -492,6 +523,7 @@ class CodeGenerator(BaseVisitor, Utils):
         # for struct (scatter)
         # for interface -> interface -> new file -> new emitter
         self.emit = Emitter(dir_ + "/" + self.className + ".j")
+        self.main_emitter = Emitter(self.path + '/' + self.className + '.j')
         
         # testing - may be used for global things
         # NOTE: successfully generate multiple classes
@@ -499,8 +531,20 @@ class CodeGenerator(BaseVisitor, Utils):
         # self.global_emitter.printout(self.global_emitter.emitPROLOG('GlobalClass', "java.lang.Object"))
         # self.global_emitter.printout(self.global_emitter.emitEPILOG())
 
+        # 1. first pass: getting all the emitters for structs
+        # and interface
+        first_pass = FirstPass(ast, self.path)
+        self.class_emitters = first_pass.go()
 
-        self.visit(ast, gl)
+        # 2. second pass: collect all methods of structs
+        # and methods of interfaces, perform type
+        # checking to see that whether which interfaces a struct
+        # implement
+        second_pass = SecondPass(ast)
+        class_implements_interface = second_pass.go()
+        # debug
+        #second_pass.debug_print_result()
+        # self.visit(ast, gl)
 
     # NOTE:
     # Our program will be translated into a assembly-like

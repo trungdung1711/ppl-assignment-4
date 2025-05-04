@@ -12,6 +12,10 @@
 .class public interface_/Dog
 .super java/lang/Object
 .implements interface_/Animal
+.implements interface_/Mammal
+
+.field public name Ljava/lang/String;
+.field public age I
 
 .method public <init>()V
   .limit stack 1
@@ -25,8 +29,15 @@
 .method public getType()Ljava/lang/String;
   .limit stack 1
   .limit locals 1
-  .line 7
+  .line 10
   0: ldc "Dog"
   2: areturn
+.end method
+
+.method public giveBirth()V
+  .limit stack 0
+  .limit locals 1
+  .line 15
+  0: return
 .end method
 
