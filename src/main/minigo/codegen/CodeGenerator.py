@@ -131,35 +131,211 @@ class FirstPass(BaseVisitor):
 
 
 class SecondPass(BaseVisitor):
-    def __inti__(self, ast):
-        pass
+    class Method:
+        def __init__(self, name, params, result):
+            self.name   = name
+            self.params = params      # list of Type (from prof)
+            self.result = result      # Type (from prof)
+
+
+    @staticmethod
+    def identical(t1, t2) -> bool:
+        # based on the type of ast
+        if (t1 is t2):
+            return True
+        
+        if (type(t1) is not type(t2)):
+            return False
+        
+        # same type
+        elif isinstance(t1, IntType) and isinstance(t2, IntType):
+            return True
+        
+        elif isinstance(t1, FloatType) and isinstance(t2, FloatType):
+            return True
+        
+        elif isinstance(t1, BoolType) and isinstance(t2, BoolType):
+            return True
+        
+        elif isinstance(t1, StringType) and isinstance(t2, StringType):
+            return True
+        
+        elif isinstance(t1, VoidType) and isinstance(t2, VoidType):
+            return True
+        
+        elif isinstance(t1, ArrayType) and isinstance(t2, ArrayType):
+            # NOTE: assume that it is always IntLiteral
+            # but if it not IntLiteral -> Const
+            # in the case of Const, then to bypass
+            # we can check for the dimention, if it is same dimention
+            # implement -> the interface (different value -> not the case)
+            # -> semantic checking prevent it, no assignment like that
+            # and implements that is totally OK (all), might be others will prevent
+            # that -> only checking for the dimention
+            if type(t1.eleType) is not type(t2.eleType):
+                return False
+            if len(t1.dimens) != len(t2.dimens):
+                return False
+            # NOTE: don't check for the size, because
+            # in java int[] and int[][] are all objects
+            return True
+        
+        elif isinstance(t1, Id) and isinstance(t2, Id):
+            return t1.name == t2.name
+        
+        # dead code
+        elif isinstance(t1, SecondPass.Struct) and isinstance(t2, SecondPass.Struct):
+            # same name means same type
+            return t1.name == t2.name
+        
+        elif isinstance(t1, SecondPass.Interface) and isinstance(t2, SecondPass.Interface):
+            # same name means same type
+            return t1.name == t2.name
+        
+        return False
+
+
+    class Struct:
+        def __init__(self, name):
+            self.name = name
+
+
+    class Interface:
+        def __init__(self, name):
+            self.name = name
+
+
+
+    @staticmethod
+    def same_signature(m1, m2) -> bool:
+
+        if type(m1) != type(m2):
+            return False
+        
+        elif (not isinstance(m1, SecondPass.Method) or not isinstance(m2, SecondPass.Method)):
+            return False
+        
+        elif len(m1.params) != len(m2.params):
+            return False
+        
+        elif type(m1.result) != type(m2.result):
+            return False
+
+        # same len of param, same return, check for param
+        else:
+            return all(SecondPass.identical(t1, t2) for t1, t2 in zip(m1.params, m2.params))
+
+
+
+    def __init__(self, ast):
+        self.structs     = dict()    # name - list[methods]
+        self.interfaces  = dict()    # name - list[methods]
+
+        self.result      = dict()    # name - list[names]
 
 
     def go(self, ast):
-        pass
+        self.visit(ast)
+        self.check()
+        return self.result
+    
+
+    # for debugging
+    def debug_print_result(self):
+        for struct, interfaces in self.result:
+            if interfaces:
+                joined = ", ".join(interfaces)
+                print(f"{struct}: {joined}")
+            else:
+                print(f"{struct}: (no interfaces)")
 
 
-    def check(self, ast):
+    def check(self):
         # check which structs implement
         # which interfaces -> note, used for
         # emitter of struct
-        pass
+        # for each of the structs
+        # for each of the interfaces
+        # check that whether it implements any interface
+        # will be run after collecting all methods of structs
+        # and interfaces
+
+        for struct, smethods in self.structs.items():
+            for interface, imethods in self.interfaces.items():
+                if SecondPass.a_implements_b(smethods, imethods):
+                    self.result[struct].add(interface)
+
+
+    @staticmethod
+    def a_implements_b(Amethods, Bmethods) -> bool:
+        """check whether struct A implements interface B or not
+
+        Args:
+            Amethods (list): list of methods of struct A
+            Bmethods (list): list of methods of interface B
+
+        Returns:
+            bool: True if Bmethods is a subset of Amethods
+        """
+        # checking whether methods in B are subset of A
+        # if not -> false
+        Aname_set = set([method.name for method in Amethods])
+        Bname_set = set([method.name for method in Bmethods])
+        if not Bname_set.issubset(Aname_set):
+            return False
+        
+        # true about subset
+        # check the signature
+        # loop through the interface's method
+        # and check for the struct methods
+        def method_check(acc, cur):
+            method = next(filter(lambda method: method.name == cur.name, Amethods), None)
+            # checking the signature of both methods
+            acc.append(SecondPass.same_signature(cur, method))
+        return all(reduce(method_check, Bmethods, []))
 
 
     def visitProgram(self, ast, o):
-        pass
+        [self.visit(decl, None) for decl in ast.decl]
 
 
     def visitStructType(self, ast, o):
-        pass
+        # init the list for each structs
+        self.result[ast.name] = set()
 
 
     def visitMethodDecl(self, ast, o):
-        pass
+        class_name = ast.receiver
+        if class_name is not self.structs:
+            # first time
+            self.structs[class_name] = []
+        # contain the key
+        # 1. create the method
+        # 2. append to to the list Method
+        self.structs[class_name].apend(self.visit(ast.fun, None))
+
+
+    def visitFuncDecl(self, ast, o):
+        param_types = reduce(lambda acc, cur: acc.append(self.visit(cur, None)), ast.params, [])
+        return SecondPass.Method(ast.name, param_types, ast.retType)
+
+
+    def visitParamDecl(self, ast, o):
+        return ast.parType
 
 
     def visitInterfaceType(self, ast, o):
-        pass
+        # 1. visit this node
+        # we would know all the methods of this interface
+        # 2. just allocate the list immediately
+        # 3. visit each of the prototype to get the method
+        method_lists = reduce(lambda acc, cur: acc.append(self.visit(cur, None)), ast.methods, [])
+        self.interfaces[ast.name] = method_lists
+
+
+    def visitPrototype(self, ast, o):
+        return SecondPass.Method(ast.name, ast.params, ast.reType)
+
 
 
 class ThirdPass(BaseVisitor):
@@ -196,6 +372,48 @@ class ThirdPass(BaseVisitor):
         pass
 
 
+class Scope:
+    def __init__(self):
+        self.lst = [[]]
+
+
+    def current(self):
+        """return the current scope
+
+        Returns:
+            list: a list of current scope
+        """
+        return self.lst[-1]
+
+    
+    def new_scope(self):
+        """append a new scope to the scope chain
+        """
+        self.lst.append([])
+        return
+    
+
+    def out_scope(self):
+        """pop the current scope out of the scope chain
+        """
+        self.lst.pop()
+        return
+    
+
+    def look_up(self, name):
+        """return the current object refered
+
+        Args:
+            name (str): name of that object (*Ident)
+
+        Returns:
+            Symbol: the object
+        """
+        flatten = [obj for scope in self.lst for obj in scope]
+        reverse_flatten = flatten[::-1]
+        return next(filter(lambda obj: obj.name == name, reverse_flatten), None)
+
+
 ####################################################
 # NOTE: NO SEMANTIC ERROR AT THIS POINT, everything
 # is correct, just consider run-time error
@@ -220,48 +438,6 @@ class ThirdPass(BaseVisitor):
 # "emitter" để cất đối tượng Emitter (mỗi emitter sẽ tạo một file j, do sẽ có nhiều file j nên sẽ có nhiều emitter) 
 # tương tự như thành phần "frame" để cất đối tượng Frame để sinh mã cho mỗi phương thức.
 class CodeGenerator(BaseVisitor, Utils):
-
-
-    class Scope:
-        def __init__(self):
-            self.lst = [[]]
-
-
-        def current(self):
-            """return the current scope
-
-            Returns:
-                list: a list of current scope
-            """
-            return self.lst[-1]
-
-        
-        def new_scope(self):
-            """append a new scope to the scope chain
-            """
-            self.lst.append([])
-            return
-        
-
-        def out_scope(self):
-            """pop the current scope out of the scope chain
-            """
-            self.lst.pop()
-            return
-        
-
-        def look_up(self, name):
-            """return the current object refered
-
-            Args:
-                name (str): name of that object (*Ident)
-
-            Returns:
-                Symbol: the object
-            """
-            flatten = [obj for scope in self.lst for obj in scope]
-            reverse_flatten = flatten[::-1]
-            return next(filter(lambda obj: obj.name == name, reverse_flatten), None)
 
 
     def __init__(self):
