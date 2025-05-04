@@ -13,6 +13,9 @@
 .super java/lang/Object
 .implements program/Entity
 
+.field public name Ljava/lang/String;
+.field public age I
+
 .method public <init>()V
   .limit stack 1
   .limit locals 1
@@ -25,7 +28,7 @@
 .method public getType()Ljava/lang/String;
   .limit stack 1
   .limit locals 1
-  .line 7
+  .line 9
   0: ldc "Human"
   2: areturn
 .end method

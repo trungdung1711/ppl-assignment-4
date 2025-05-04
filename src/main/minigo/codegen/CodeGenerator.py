@@ -99,9 +99,90 @@ class Access():
 class FirstPass(BaseVisitor):
     def __init__(self, ast):
         self.ast = ast
+        self.class_emitter = dict()
 
 
     def go(self, ast):
+        return self.visit(self.ast, None)
+
+
+    def visitProgram(self, ast, o):
+        pass
+
+
+    def visitStructType(self, ast, o):
+        # create a new emitter for this struct
+        pass
+
+
+    def visitInterfaceType(self, ast, o):
+        # create a new emitter for this interface
+        pass
+
+
+class SecondPass(BaseVisitor):
+    def __inti__(self, ast):
+        pass
+
+
+    def go(self, ast):
+        pass
+
+
+    def check(self, ast):
+        # check which structs implement
+        # which interfaces -> note, used for
+        # emitter of struct
+        pass
+
+
+    def visitProgram(self, ast, o):
+        pass
+
+
+    def visitStructType(self, ast, o):
+        pass
+
+
+    def visitMethodDecl(self, ast, o):
+        pass
+
+
+    def visitInterfaceType(self, ast, o):
+        pass
+
+
+class ThirdPass(BaseVisitor):
+    def __init__(self, ast):
+        self.class_emitters     = None
+        self.interface_emitters = None
+        pass
+
+
+    def go(self, ast):
+        pass
+
+
+    def visitProgram(self, ast, o):
+        pass
+
+
+    def visitStructType(self, ast, o):
+        # emit
+        # .class public <name>
+        # .super java/lang/Object
+        # .implements <name> <name>
+
+        # .field public <name> <type>
+        pass
+
+
+    def visitInterfaceType(self, ast, o):
+        # emit
+        # .interface public abstract <name>
+        # .super java/lang/Object
+
+        # .method public abstract <name>()<type>;
         pass
 
 
@@ -120,15 +201,75 @@ class FirstPass(BaseVisitor):
 # Thus our task must make a function/method
 # to be executed at that time
 ####################################################
-class CodeGenerator(BaseVisitor,Utils):
+
+# Mức 1: Sinh mã với các biến chỉ ở các kiểu cơ bản như int,
+#  float, boolean và string và thực hiện sinh mã cho 
+# các biểu thức và các phát biểu 
+# (khai báo và gán phải làm đầu tiên). 
+# Khác với init code, các em nên tạo một thành phần của môi trường là 
+# "emitter" để cất đối tượng Emitter (mỗi emitter sẽ tạo một file j, do sẽ có nhiều file j nên sẽ có nhiều emitter) 
+# tương tự như thành phần "frame" để cất đối tượng Frame để sinh mã cho mỗi phương thức.
+class CodeGenerator(BaseVisitor, Utils):
+
+
+    class Scope:
+        def __init__(self):
+            self.lst = [[]]
+
+
+        def current(self):
+            """return the current scope
+
+            Returns:
+                list: a list of current scope
+            """
+            return self.lst[-1]
+
+        
+        def new_scope(self):
+            """append a new scope to the scope chain
+            """
+            self.lst.append([])
+            return
+        
+
+        def out_scope(self):
+            """pop the current scope out of the scope chain
+            """
+            self.lst.pop()
+            return
+        
+
+        def look_up(self, name):
+            """return the current object refered
+
+            Args:
+                name (str): name of that object (*Ident)
+
+            Returns:
+                Symbol: the object
+            """
+            flatten = [obj for scope in self.lst for obj in scope]
+            reverse_flatten = flatten[::-1]
+            return next(filter(lambda obj: obj.name == name, reverse_flatten), None)
+
+
     def __init__(self):
         self.className = "MiniGoClass"
         self.astTree = None
         self.path = None
         self.emit = None
-        self.global_emitter = None
+        # added
 
-    def init(self):
+        self.global_emitter = None
+        self.class_emitters = None
+        self.interface_emitters = None
+
+
+    def init(self, ast, dir):
+        self.main_emitter   = Emitter(dir + '/' + self.className + '.j')
+        self.global_emitter = Emitter(dir + '/' + 'GlobalClass'  + '.j')
+        
         mem = [
             Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
             Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
@@ -136,11 +277,29 @@ class CodeGenerator(BaseVisitor,Utils):
             Symbol('putFloatLn',MType([FloatType()],    VoidType()),    CName('io', True))
                 ]
         return mem
+    
+
+    def done(self):
+        # to write all the buffer to file
+        # NOTE: each Emitter has a buffer
+        # NOTE: Emitter.printout()      -> just append str to buffer
+        # NOTE: Emitter.emit<name>()    -> return the string
+        # NOTE: Emitter.emitPROLOG()    -> return str open
+        # NOTE: Emiiter.emitEPILOG()    -> write buffer to file
+
+        # 1. GlobalClass
+        self.global_emitter.emitEPILOG()
+
+        # 2. MainClass
+        self.main_emitter.emitEPILOG()
+        pass
+
 
     def gen(self, ast, dir_):
         # NOTE: starting point
+        # called in test
 
-        gl = self.init()
+        gl = self.init(ast, dir_)
         self.astTree = ast
         self.path = dir_
         # for struct -> class -> new file -> new emitter
@@ -172,7 +331,7 @@ class CodeGenerator(BaseVisitor,Utils):
     # All it does is just call the Object.init()
     ####################################################
     def emitObjectInit(self):
-        frame = Frame("<init>", VoidType())  
+        frame = Frame("<init>", VoidType())
         self.emit.printout(self.emit.emitMETHOD("<init>", MType([], VoidType()), False, frame))  # Bắt đầu định nghĩa phương thức <init>
         frame.enterScope(True)  
         self.emit.printout(self.emit.emitVAR(frame.getNewIndex(), "this", ClassType(self.className), frame.getStartLabel(), frame.getEndLabel(), frame))  # Tạo biến "this" trong phương thức <init>
@@ -233,6 +392,10 @@ class CodeGenerator(BaseVisitor,Utils):
         self.emit.printout(self.emit.emitENDMETHOD(frame))
         frame.exitScope()
         return o
+    
+        # emitter - GlobalClass
+        # frame
+        # scope
 
 
     def visitVarDecl(self, ast, o):
@@ -271,6 +434,17 @@ class CodeGenerator(BaseVisitor,Utils):
     
 
     def visitExpression(self, ast, o):
+        # wrapper of expression
+        pass
+
+
+    def visitGlobalDeclaration(self, ast, o):
+        # wrapper of global declarations
+        pass
+
+
+    def visiStmt(self, ast, o):
+        # wrapper of statements
         pass
 
 
@@ -332,7 +506,11 @@ class CodeGenerator(BaseVisitor,Utils):
         return None
 
 
-    def visitMethodDecl(self, param):
+    def visitMethodDecl(self, ast, o):
+        # emitter .method .end
+        # frame
+        # scope
+
         return None
 
 

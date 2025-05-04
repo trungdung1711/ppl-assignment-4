@@ -660,7 +660,13 @@ class Emitter():
         self.buff.clear()
 
 
+    # my utils
+    '''
+    - same function as printout
+    - just buffering the code
+    - use emitEPILOG to write the whole buffer to file
+    '''
+    def buffer(self, in_):
+        #in_: String
 
-
-
-        
+        self.buff.append(in_)
