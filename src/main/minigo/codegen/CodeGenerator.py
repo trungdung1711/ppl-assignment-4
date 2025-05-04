@@ -97,27 +97,37 @@ class Access():
 # 
 ####################################################
 class FirstPass(BaseVisitor):
-    def __init__(self, ast):
-        self.ast = ast
-        self.class_emitter = dict()
+    def __init__(self, ast, directory):
+        self.ast                = ast
+        self.directory          = directory
+        self.class_emitters     = dict()
+        # self.interface_emitters = dict()
 
 
     def go(self, ast):
         return self.visit(self.ast, None)
+    
+
+    def collect(self):
+        return self.class_emitters
 
 
     def visitProgram(self, ast, o):
-        pass
+        [self.visit(decl, o) for decl in ast.decl]
 
 
     def visitStructType(self, ast, o):
         # create a new emitter for this struct
-        pass
+        name = ast.name
+        emitter = Emitter(self.directory + '/' + name + '.j')
+        self.class_emitters[name] = emitter
 
 
     def visitInterfaceType(self, ast, o):
         # create a new emitter for this interface
-        pass
+        name = ast.name
+        emitter = Emitter(self.directory + '/' + name + '.j')
+        self.class_emitters[name] = emitter
 
 
 class SecondPass(BaseVisitor):
@@ -440,6 +450,22 @@ class CodeGenerator(BaseVisitor, Utils):
 
     def visitGlobalDeclaration(self, ast, o):
         # wrapper of global declarations
+
+        # global variable, const
+        # 1. add to the current scope
+        # 2. generate .field static in GlobalClass
+
+        # struct/interface
+        # skip
+
+        # method
+        # 1. use class_emitters -> class
+        # 2. create a new frame to pass
+        # 3. pass the scope to that (chain)
+
+        # function
+        # 1. create a new frame to pass
+        # 2. pass the scope to that (chain)
         pass
 
 
