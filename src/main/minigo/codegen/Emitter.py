@@ -201,9 +201,16 @@ class Emitter():
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
         
+        elif isinstance(inType, Id):
+            # then this is the object [JVM stores it in heap]
+            # we would use reference to work with it
+            # using aload
+            return self.jvm.emitALOAD(index)
+
         # ArrayType is considered to be object
         elif type(inType) is ArrayType or type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitALOAD(index)
+        
         else:
             raise IllegalOperandException(name)
 
@@ -713,6 +720,28 @@ class Emitter():
 
     def get_jvm(self) -> JasminCode:
         return self.jvm
+    
+
+    def emit_class_declaration(self):
+        code = list()
+        code.append(self.jvm.emitSOURCE(self.class_name + '.java'))
+        code.append(self.jvm.emitCLASS('public ' + self.class_name))
+        code.append(self.jvm.emitSUPER('/'.join(['java', 'lang', 'Object'])))        
+        return ''.join(code)
+
+
+    def emit_field(self, name, typ):
+        td = self.getJVMType(typ)
+        return self.jvm.emitINSTANCEFIELD(name, td, False, None)
+
+
+    # will be called later for interface checking
+    def emit_class_implements(self, interfaces : list[str]):
+        code = [self.jvm.emitIMPLEMENTS(interface) for interface in interfaces]
+        code.append(
+            self.emit_line(1)
+        )
+        return ''.join(code)
 
 
     def emit_interface_declaration(self):

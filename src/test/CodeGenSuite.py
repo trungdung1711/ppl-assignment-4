@@ -46,6 +46,37 @@ class CheckCodeGenSuite(unittest.TestCase):
         type Dog struct {
             name string
             age int
+            cat Cat
+            attacker Attacker
+        }
+
+        type Kikyou struct {
+            name string
+            age int
+            weapon Weapon
+            reiryoku float
+        }
+
+        type Weapon interface {
+            Damage() float
+        }
+
+        type Hiraikotsu struct {
+            name string
+            damage float
+        }
+
+        func (h Hiraikotsu) Damage() float {
+            return h.damage
+        }
+
+        type Tessaiga struct {
+            name string
+            damage float
+        }
+
+        func (t Tessaiga) Damage() float {
+            return 10000.0
         }
 
         type Cat struct {

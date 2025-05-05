@@ -374,6 +374,7 @@ FLOATTYPE   = FloatType()
 BOOLTYPE    = BoolType()
 STRTYPE     = StringType()
 VOID        = VoidType()
+ID          = Id
 
 
 class ThirdPass(BaseVisitor):
@@ -388,10 +389,10 @@ class ThirdPass(BaseVisitor):
 
 
     @staticmethod
-    def emitObjectInit(self, emitter : Emitter):
+    def buffer_init(emitter : Emitter):
         # NOTE: nothing to do with return type of Frame
-        frame = Frame('<init>', VoidType())
-        method_type = MType([], VoidType())
+        frame = Frame('<init>', VOID)
+        method_type = MType([], VOID)
         emitter.buffer(emitter.emitMETHOD('<init>', method_type, False, frame))
         # scope of this method
         frame.enterScope(True)
@@ -399,7 +400,7 @@ class ThirdPass(BaseVisitor):
         # NOTE: JVM will automatically push <this> for us
         # frame simulates the operand stack
         this_index = frame.getNewIndex()
-        this_type  = ClassType(emitter.class_name)
+        this_type  = Id(emitter.class_name)
         # .var is used for debugging
         emitter.buffer(emitter.emitVAR(
             this_index, 
@@ -457,18 +458,64 @@ class ThirdPass(BaseVisitor):
         self.visit(self.ast, self.class_emitters)
 
 
+    # for debugging, write the structs
+    # with no methods, for checking,
+    # also skip the .implement directive
+    def debug_write(self):
+        [e.emitEPILOG() for e in self.class_emitters.values()]
+
+
     def visitProgram(self, ast, o):
         [self.visit(decl, o) for decl in ast.decl]
 
 
     def visitStructType(self, ast, o):
         # emit
+
+        # NOTE: current skip .implements
+        # to be able to put the field first
         # .class public <name>
         # .super java/lang/Object
         # .implements <name> <name>
 
         # .field public <name> <type>
-        pass
+        emitter = self.get_emitter(ast.name)
+        interfaces = self.structs_interfaces[ast.name]
+
+        # 1. generate the class declaration part
+        code = list()
+        code.append(
+            emitter.emit_class_declaration()
+        )
+
+        code.append(
+            emitter.emit_line(1)
+        )
+
+        # 2. generate the .implements part
+        # NOT for debugging
+        # code.append(
+        #     emitter.emit_class_implements(interfaces)
+        # )
+
+        # 3. generate the .field part
+        # NOTE: all fields are all public
+        fields = [emitter.emit_field(name, typ) for name, typ in ast.elements]
+        code.extend(fields)
+        code.append(
+            emitter.emit_line(1)
+        )
+
+        # 4. generate the <init> method if the dev
+        # doesn't give one
+        # ThirdPass.buffer_init(emitter)
+
+
+        emitter.buffer(
+            ''.join(code)
+        )
+
+        ThirdPass.buffer_init(emitter)
 
 
     def visitInterfaceType(self, ast, o):
@@ -491,7 +538,7 @@ class ThirdPass(BaseVisitor):
         )
 
         # write interface
-        emitter.emitEPILOG()
+        # emitter.emitEPILOG()
 
 
     def visitPrototype(self, ast, o):
@@ -655,14 +702,7 @@ class CodeGenerator(BaseVisitor, Utils):
         # for struct -> class -> new file -> new emitter
         # for struct (scatter)
         # for interface -> interface -> new file -> new emitter
-        self.emit = Emitter(dir_ + "/" + self.className + ".j", self.className)
         self.main_emitter = Emitter(self.path + '/' + self.className + '.j', self.className)
-        
-        # testing - may be used for global things
-        # NOTE: successfully generate multiple classes
-        # self.global_emitter = Emitter(dir_ + '/' + 'GlobalClass' + '.j')
-        # self.global_emitter.printout(self.global_emitter.emitPROLOG('GlobalClass', "java.lang.Object"))
-        # self.global_emitter.printout(self.global_emitter.emitEPILOG())
 
         # 1. first pass: getting all the emitters for structs
         # and interface
@@ -683,8 +723,8 @@ class CodeGenerator(BaseVisitor, Utils):
         # generate all interface files
         third_pass = ThirdPass(ast, self.class_emitters, structs_interfaces)
         third_pass.go()
+        third_pass.debug_write()
 
-        # self.visit(ast, gl)
 
     # NOTE:
     # Our program will be translated into a assembly-like
