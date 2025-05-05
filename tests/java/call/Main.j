@@ -21,30 +21,18 @@
   4: return
 .end method
 
-.method public static doSomething()V
-  .limit stack 0
-  .limit locals 0
-  .line 5
-  0: invokestatic call/Main/run()V
-  .line 6
-  3: return
-.end method
-
-.method public static run()V
+.method public run()V
   .limit stack 2
-  .limit locals 3
-  .line 9
-  0: bipush 100
-  2: istore_0
-  .line 10
-  3: bipush 100
-  5: istore_1
-  .line 11
-  6: iload_0
-  7: iload_1
-  8: iadd
-  9: istore_2
-  .line 12
-  10: return
+  .limit locals 2
+  .line 5
+  0: new call/Cat
+  3: dup
+  4: invokespecial call/Cat/<init>()V
+  7: astore_1
+  .line 6
+  8: aload_1
+  9: invokevirtual call/Cat/meow()V
+  .line 7
+  12: return
 .end method
 

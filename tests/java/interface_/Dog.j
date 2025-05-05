@@ -11,8 +11,6 @@
 .source Dog.java
 .class public interface_/Dog
 .super java/lang/Object
-.implements interface_/Animal
-.implements interface_/Mammal
 
 .field public name Ljava/lang/String;
 .field public age I
@@ -26,18 +24,18 @@
   4: return
 .end method
 
-.method public getType()Ljava/lang/String;
-  .limit stack 1
-  .limit locals 1
+.method public attack(Linterface_/Animal;)V
+  .limit stack 2
+  .limit locals 2
+  .line 9
+  0: aload_1
+  1: invokeinterface interface_/Animal/getBool()Z 1
+  6: pop
   .line 10
-  0: ldc "Dog"
-  2: areturn
-.end method
-
-.method public giveBirth()V
-  .limit stack 0
-  .limit locals 1
-  .line 15
-  0: return
+  7: aload_0
+  8: aload_1
+  9: invokevirtual interface_/Dog/attack(Linterface_/Animal;)V
+  .line 11
+  12: return
 .end method
 

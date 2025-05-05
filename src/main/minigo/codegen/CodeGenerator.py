@@ -15,7 +15,7 @@ from Visitor import *
 from AST import *
 
 # from StaticError import *
-from Emitter import Emitter, MType, ClassType
+from Emitter import Emitter, MType, ClassType, Method
 from Frame import Frame
 from abc import ABC, abstractmethod
 from functools import reduce
@@ -144,13 +144,6 @@ class FirstPass(BaseVisitor):
 
 
 class SecondPass(BaseVisitor):
-    class Method:
-        def __init__(self, name, params, result):
-            self.name   = name
-            self.params = params      # list of Type (from prof)
-            self.result = result      # Type (from prof)
-
-
     @staticmethod
     def identical(t1, t2) -> bool:
         # based on the type of ast
@@ -218,14 +211,13 @@ class SecondPass(BaseVisitor):
             self.name = name
 
 
-
     @staticmethod
     def same_signature(m1, m2) -> bool:
 
         if type(m1) != type(m2):
             return False
         
-        elif (not isinstance(m1, SecondPass.Method) or not isinstance(m2, SecondPass.Method)):
+        elif (not isinstance(m1, Method) or not isinstance(m2, Method)):
             return False
         
         elif len(m1.params) != len(m2.params):
@@ -241,8 +233,12 @@ class SecondPass(BaseVisitor):
 
     def __init__(self, ast):
         self.ast         = ast
+        # will be used to search for method descriptor [method call]
         self.structs     = dict()    # name - list[methods]
+        # will be used to search for method descriptor [method call]
         self.interfaces  = dict()    # name - list[methods]
+        # will be used to search for function call
+        self.functions   = dict()    # name - method
 
         self.result      = dict()    # name - list[names]
 
@@ -250,8 +246,8 @@ class SecondPass(BaseVisitor):
     def go(self):
         self.visit(self.ast, None)
         self.check()
-        return self.result
-    
+        return self.result, self.structs, self.interfaces, self.functions
+
 
     # for debugging
     def debug_print_result(self):
@@ -335,12 +331,16 @@ class SecondPass(BaseVisitor):
         # contain the key
         # 1. create the method
         # 2. append to to the list Method
-        self.structs[class_name].append(self.visit(ast.fun, None))
+        # don't call down function
+        fun = ast.fun
+        param_types = [self.visit(param, None) for param in fun.params]
+        method = Method(fun.name, param_types, fun.retType)
+        self.structs[class_name].append(method)
 
 
     def visitFuncDecl(self, ast, o):
         param_types = [self.visit(param, None) for param in ast.params]
-        return SecondPass.Method(ast.name, param_types, ast.retType)
+        self.functions[ast.name] = Method(ast.name, param_types, ast.retType)
 
 
     def visitParamDecl(self, ast, o):
@@ -358,7 +358,7 @@ class SecondPass(BaseVisitor):
 
 
     def visitPrototype(self, ast, o):
-        return SecondPass.Method(ast.name, ast.params, ast.retType)
+        return Method(ast.name, ast.params, ast.retType)
 
 
     def visitVarDecl(self, ast, o):
@@ -623,6 +623,40 @@ class Scope:
         flatten = [obj for scope in self.lst for obj in scope]
         reverse_flatten = flatten[::-1]
         return next(filter(lambda obj: obj.name == name, reverse_flatten), None)
+    
+
+class FifthPass(BaseVisitor):
+    def __init__(self, ast, emitter):
+        self.ast        = ast
+        self.emitter    = emitter
+
+
+    def go(self):
+        pass
+
+
+    def visitVarDecl(self, ast, o):
+        pass
+
+
+    def visitConstDecl(self, ast, o):
+        pass
+
+
+    def visitMethodDecl(self, ast, o):
+        pass
+
+
+    def visitFuncDecl(self, ast, o):
+        pass
+
+
+    def visitStructType(self, ast, o):
+        pass
+
+
+    def visitInterfaceType(self, ast, o):
+        pass
 
 
 ####################################################
@@ -659,7 +693,12 @@ class CodeGenerator(BaseVisitor, Utils):
         # added
 
         # self.global_emitter = None
-        self.class_emitters = None
+        self.class_emitters     = None
+
+        # Can add to the type system, but bypass that
+        self.structs            = None
+        self.interfaces         = None
+        self.functions          = None
         # self.interface_emitters = None
 
 
@@ -714,7 +753,13 @@ class CodeGenerator(BaseVisitor, Utils):
         # checking to see that whether which interfaces a struct
         # implement
         second_pass = SecondPass(ast)
-        structs_interfaces = second_pass.go()
+        # will be used in CodeGenerator to search for method descriptors used for
+        # invoke?
+        structs_interfaces, structs, interfaces, functions = second_pass.go()
+        self.structs    = structs
+        # must return a type to detect that one
+        self.interfaces = interfaces
+        self.functions  = functions
         # debug
         #second_pass.debug_print_result()
 
@@ -724,6 +769,46 @@ class CodeGenerator(BaseVisitor, Utils):
         third_pass = ThirdPass(ast, self.class_emitters, structs_interfaces)
         third_pass.go()
         third_pass.debug_write()
+
+        # 4. final pass: generate the:
+        # - global field    -> .field static
+        # - constant field  -> .field final static
+        #   if initialisation -> must be done in the <clinit>
+        # - function        -> .method static in MiniGoClass.j
+        # - method          -> .method for each of the emitter
+
+
+    def visit_global_declaration(self, ast, o):
+        # wrapper of global declarations
+
+        # global variable, const
+        # 1. add to the current scope
+        # 2. generate .field static in GlobalClass
+        # jvm provides us with getstatic and putstatic <class>/name type
+        # we could store the buffer in different place, before rearrange them
+
+        # in MiniGoClass.j
+        # [static]-[init]-[function]-[clinit]
+        # for the <clinit>, visit the static field again
+        # if there are expression in init part, visit that part
+        # to genrate the value and putstatic
+        # pass 5?
+
+        # struct/interface
+        # skip
+
+        # method
+        # 1. use class_emitters -> class
+        # 2. create a new frame to pass
+        # 3. pass the scope to that (chain)
+        # 4. just buffer the code normally
+
+        # function
+        # 1. create a new frame to pass
+        # 2. pass the scope to that (chain)
+        # 3. special treat for <main>
+        # not really?
+        pass
 
 
     # NOTE:
@@ -845,27 +930,6 @@ class CodeGenerator(BaseVisitor, Utils):
 
     def visitExpression(self, ast, o):
         # wrapper of expression
-        pass
-
-
-    def visitGlobalDeclaration(self, ast, o):
-        # wrapper of global declarations
-
-        # global variable, const
-        # 1. add to the current scope
-        # 2. generate .field static in GlobalClass
-
-        # struct/interface
-        # skip
-
-        # method
-        # 1. use class_emitters -> class
-        # 2. create a new frame to pass
-        # 3. pass the scope to that (chain)
-
-        # function
-        # 1. create a new frame to pass
-        # 2. pass the scope to that (chain)
         pass
 
 

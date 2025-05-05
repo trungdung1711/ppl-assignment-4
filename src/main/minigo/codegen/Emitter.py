@@ -7,6 +7,24 @@ from MachineCode import JasminCode
 from AST import *
 
 
+# same concept of MType
+class Method:
+    def __init__(self, name, params, result):
+        self.name   = name
+        self.params = params      # list of Type (from prof)
+        self.result = result      # Type (from prof)
+
+
+class Class:
+    def __init__(self, name):
+        self.name = name
+
+
+class Interface:
+    def __init__(self, name):
+        self.name = name
+
+
 class MType:
     def __init__(self,partype,rettype):
         self.partype = partype
@@ -66,6 +84,23 @@ class Emitter():
         # semantic checking is done
         elif isinstance(inType, Id):
             return 'L' + inType.name + ';'
+        
+        # class and interface is the same in this case
+        # but different when method call
+        # one - invokeVirtual
+        # one - invokeInterface
+        # used to resolve to type in the [expression]
+        # which is important in Var, Const
+        # in the type descriptor -> L<class_name>; -> OK for that
+        elif isinstance(inType, Class):
+            return 'L' + inType.name + ';'
+        
+        elif isinstance(inType, Interface):
+            return 'L' + inType.name + ';'
+        
+        # method descriptor
+        elif isinstance(inType, Method):
+            return '(' + ''.join(list(map(lambda par: self.getJVMType(par), inType.params))) + ')' + self.getJVMType(inType.result)
 
         
         elif typeIn is MType:
