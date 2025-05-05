@@ -25,10 +25,3 @@
   4: return
 .end method
 
-.method public doMethod()V
-  .limit stack 0
-  .limit locals 1
-  .line 11
-  0: return
-.end method
-

@@ -2,6 +2,7 @@ from Utils import *
 # from StaticCheck import *
 # from StaticError import *
 # import CodeGenerator as cgen
+from CodeGenError import IllegalOperandException
 from MachineCode import JasminCode
 from AST import *
 
@@ -26,27 +27,57 @@ class ClassType():
 
 
 class Emitter():
-    def __init__(self, filename):
+    def __init__(self, filename, class_name):
+        self.class_name = class_name
         self.filename = filename
         self.buff = list()
         self.jvm = JasminCode()
 
+
+    # This method can be changed
+    # to define our Type
+    # must change ArrayType
+    # NOTE
     def getJVMType(self, inType):
         typeIn = type(inType)
+
         if typeIn is IntType:
             return "I"
+        
+        elif typeIn is FloatType:
+            return 'F'
+        
+        elif typeIn is BoolType:
+            return 'Z'
+        
         elif typeIn is StringType:
             return "Ljava/lang/String;"
+        
         elif typeIn is VoidType:
             return "V"
-        elif typeIn is ArrayType:
-            return "[" + self.getJVMType(inType.eleType)
+        
+        # int[] is object which is different from int[][]
+        elif type(inType) is ArrayType:
+            # NOTE: must check the dimension
+            # [5][4][2][5]
+            return ''.join('[' for diemn in inType.dimens) + self.getJVMType(inType.eleType)
+            # return "[" + self.getJVMType(inType.eleType)
+
+        # semantic checking is done
+        elif isinstance(inType, Id):
+            return 'L' + inType.name + ';'
+
+        
         elif typeIn is MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
+        
+
         elif typeIn is ClassType:
             return "L" + inType.name + ";"
+        
         else:
             return str(typeIn)
+
 
     def getFullType(inType):
         typeIn = type(inType)
@@ -56,6 +87,7 @@ class Emitter():
             return "java/lang/String"
         elif typeIn is VoidType:
             return "void"
+
 
     def emitPUSHICONST(self, in_, frame):
         #in: Int or Sring
@@ -155,6 +187,9 @@ class Emitter():
         
         return self.jvm.emitVAR(in_, varName, self.getJVMType(inType), fromLabel, toLabel)
 
+
+    # Must add more cases
+    # Using the Operand stack + Local variable array of JVM
     def emitREADVAR(self, name, inType, index, frame):
         #name: String
         #inType: Type
@@ -165,6 +200,8 @@ class Emitter():
         frame.push()
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
+        
+        # ArrayType is considered to be object
         elif type(inType) is ArrayType or type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitALOAD(index)
         else:
@@ -487,7 +524,7 @@ class Emitter():
 
     def emitMETHOD(self, lexeme, in_, isStatic, frame):
         #lexeme: String
-        #in_: Type
+        #in_: Type (defined by my professor, but can be changed)
         #isStatic: Boolean
         #frame: Frame
 
@@ -588,6 +625,8 @@ class Emitter():
     *   @param in the type of the returned expression.
     '''
 
+
+    # NOTE: must add more cases about return
     def emitRETURN(self, in_, frame):
         #in_: Type
         #frame: Frame
@@ -670,3 +709,39 @@ class Emitter():
         #in_: String
 
         self.buff.append(in_)
+
+
+    def get_jvm(self) -> JasminCode:
+        return self.jvm
+
+
+    def emit_interface_declaration(self):
+        code = list()
+        code.append(self.jvm.emitSOURCE(self.class_name + '.java'))
+        code.append(self.jvm.emitINTERFACE(self.class_name))
+        code.append(self.jvm.emitSUPER('/'.join(['java', 'lang', 'Object'])))
+        return ''.join(code)
+    
+
+    def emit_abstract_method(self, name : str, signature : MType):
+        code = list()
+        meth_signature = self.getJVMType(signature)
+        code.append(
+            self.jvm.emitMETHOD(
+                name,
+                meth_signature,
+                False,
+                True
+            )
+        )
+
+        code.append(
+            self.jvm.emitENDMETHOD()
+        )
+
+        return ''.join(code)
+    
+
+    def emit_line(self, number : int):
+        code = [self.jvm.END for i in range(number)]
+        return ''.join(code)

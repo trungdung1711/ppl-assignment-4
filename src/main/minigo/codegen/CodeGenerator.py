@@ -116,14 +116,14 @@ class FirstPass(BaseVisitor):
     def visitStructType(self, ast, o):
         # create a new emitter for this struct
         name = ast.name
-        emitter = Emitter(self.directory + '/' + name + '.j')
+        emitter = Emitter(self.directory + '/' + name + '.j', name)
         self.class_emitters[name] = emitter
 
 
     def visitInterfaceType(self, ast, o):
         # create a new emitter for this interface
         name = ast.name
-        emitter = Emitter(self.directory + '/' + name + '.j')
+        emitter = Emitter(self.directory + '/' + name + '.j', name)
         self.class_emitters[name] = emitter
 
 
@@ -369,19 +369,96 @@ class SecondPass(BaseVisitor):
         pass
 
 
+INTTYPE     = IntType()
+FLOATTYPE   = FloatType()
+BOOLTYPE    = BoolType()
+STRTYPE     = StringType()
+VOID        = VoidType()
+
 
 class ThirdPass(BaseVisitor):
-    def __init__(self, ast):
-        self.class_emitters     = None
-        # self.interface_emitters = None
+    def __init__(self, ast, class_emitters, structs_interfaces):
+        self.ast                = ast
+        self.class_emitters     = class_emitters
+        self.structs_interfaces = structs_interfaces
 
 
-    def go(self, ast):
-        pass
+    def get_emitter(self, name : str) -> Emitter:
+        return self.class_emitters[name]
+
+
+    @staticmethod
+    def emitObjectInit(self, emitter : Emitter):
+        # NOTE: nothing to do with return type of Frame
+        frame = Frame('<init>', VoidType())
+        method_type = MType([], VoidType())
+        emitter.buffer(emitter.emitMETHOD('<init>', method_type, False, frame))
+        # scope of this method
+        frame.enterScope(True)
+
+        # NOTE: JVM will automatically push <this> for us
+        # frame simulates the operand stack
+        this_index = frame.getNewIndex()
+        this_type  = ClassType(emitter.class_name)
+        # .var is used for debugging
+        emitter.buffer(emitter.emitVAR(
+            this_index, 
+            'this', 
+            this_type, 
+            frame.getStartLabel(), 
+            frame.getEndLabel(), 
+            frame))
+        
+        # put label, for other methods, functions
+        # scope are different
+        # NOTE
+        emitter.buffer(
+            emitter.emitLABEL(frame.getStartLabel(), frame)
+        )
+        # read this from local variable array
+        emitter.buffer(
+            emitter.emitREADVAR(
+                'this',
+                this_type,
+                0,
+                frame
+            )
+        )
+        # invoke the <int>
+        emitter.buffer(
+            emitter.emitINVOKESPECIAL(
+                frame
+            )
+        )
+
+        emitter.buffer(
+            emitter.emitLABEL(
+                frame.getEndLabel(), frame
+            )
+        )
+
+        emitter.buffer(
+            emitter.emitRETURN(
+                VOID, frame
+            )
+        )
+
+        # end of the method
+        emitter.buffer(
+            emitter.emitENDMETHOD(
+                frame
+            )
+        )
+
+        frame.exitScope()
+
+
+    def go(self):
+        self.visit(self.ast, self.class_emitters)
 
 
     def visitProgram(self, ast, o):
-        pass
+        [self.visit(decl, o) for decl in ast.decl]
 
 
     def visitStructType(self, ast, o):
@@ -400,6 +477,62 @@ class ThirdPass(BaseVisitor):
         # .super java/lang/Object
 
         # .method public abstract <name>()<type>;
+        emitter = self.get_emitter(ast.name)
+        code = list()
+
+        # emit the declaration
+        code.append(
+            emitter.emit_interface_declaration()
+        )
+
+        method_code = [self.visit(method, emitter) for method in ast.methods]
+        emitter.buffer(
+            ''.join(code + method_code)
+        )
+
+        # write interface
+        emitter.emitEPILOG()
+
+
+    def visitPrototype(self, ast, o):
+        """.method public abstract <name>()V;
+           .emd method
+
+
+        Args:
+            ast (_type_): _description_
+            o (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        emitter : Emitter = o
+        code = list()
+        code.append(
+            emitter.emit_line(1)
+        )
+
+        signature = MType(ast.params, ast.retType)
+        code.append(
+            emitter.emit_abstract_method(ast.name, signature)
+        )
+
+        return ''.join(code)
+    
+
+    def visitVarDecl(self, ast, o):
+        pass
+
+
+    def visitConstDecl(self, ast, o):
+        pass
+
+
+    def visitFuncDecl(self, ast, o):
+        pass
+
+
+    def visitMethodDecl(self, ast, o):
         pass
 
 
@@ -484,7 +617,7 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def init(self, ast, dir):
-        self.main_emitter   = Emitter(dir + '/' + self.className + '.j')
+        self.main_emitter   = Emitter(dir + '/' + self.className + '.j', self.className)
         # self.global_emitter = Emitter(dir + '/' + 'GlobalClass'  + '.j')
         
         mem = [
@@ -522,8 +655,8 @@ class CodeGenerator(BaseVisitor, Utils):
         # for struct -> class -> new file -> new emitter
         # for struct (scatter)
         # for interface -> interface -> new file -> new emitter
-        self.emit = Emitter(dir_ + "/" + self.className + ".j")
-        self.main_emitter = Emitter(self.path + '/' + self.className + '.j')
+        self.emit = Emitter(dir_ + "/" + self.className + ".j", self.className)
+        self.main_emitter = Emitter(self.path + '/' + self.className + '.j', self.className)
         
         # testing - may be used for global things
         # NOTE: successfully generate multiple classes
@@ -541,9 +674,16 @@ class CodeGenerator(BaseVisitor, Utils):
         # checking to see that whether which interfaces a struct
         # implement
         second_pass = SecondPass(ast)
-        class_implements_interface = second_pass.go()
+        structs_interfaces = second_pass.go()
         # debug
         #second_pass.debug_print_result()
+
+        # 3. third pass: generate .class for struct
+        # and also fields for struct (prepared for methods)
+        # generate all interface files
+        third_pass = ThirdPass(ast, self.class_emitters, structs_interfaces)
+        third_pass.go()
+
         # self.visit(ast, gl)
 
     # NOTE:
