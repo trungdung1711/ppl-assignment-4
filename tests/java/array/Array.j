@@ -21,33 +21,65 @@
   4: return
 .end method
 
-.method public static main([Ljava/lang/String;)V
-  .limit stack 4
-  .limit locals 4
-  .line 6
-  0: bipush 10
-  2: istore_1
-  .line 7
-  3: bipush 10
-  5: newarray int
-  7: astore_2
-  .line 8
-  8: iconst_3
-  9: newarray int
-  11: dup
-  12: iconst_0
-  13: iconst_1
-  14: iastore
-  15: dup
-  16: iconst_1
-  17: iconst_2
-  18: iastore
-  19: dup
-  20: iconst_2
-  21: iconst_3
-  22: iastore
-  23: astore_3
+.method public run()V
+  .limit stack 7
+  .limit locals 2
   .line 9
-  24: return
+  0: iconst_3
+  1: anewarray [I
+  4: dup
+  5: iconst_0
+  6: iconst_3
+  7: newarray int
+  9: dup
+  10: iconst_0
+  11: iconst_1
+  12: iastore
+  13: dup
+  14: iconst_1
+  15: iconst_2
+  16: iastore
+  17: dup
+  18: iconst_2
+  19: iconst_3
+  20: iastore
+  21: aastore
+  22: dup
+  23: iconst_1
+  24: iconst_3
+  25: newarray int
+  27: dup
+  28: iconst_0
+  29: iconst_4
+  30: iastore
+  31: dup
+  32: iconst_1
+  33: iconst_5
+  34: iastore
+  35: dup
+  36: iconst_2
+  37: bipush 6
+  39: iastore
+  40: aastore
+  41: dup
+  42: iconst_2
+  43: iconst_3
+  44: newarray int
+  46: dup
+  47: iconst_0
+  48: bipush 7
+  50: iastore
+  51: dup
+  52: iconst_1
+  53: bipush 8
+  55: iastore
+  56: dup
+  57: iconst_2
+  58: bipush 9
+  60: iastore
+  61: aastore
+  62: astore_1
+  .line 10
+  63: return
 .end method
 

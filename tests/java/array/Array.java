@@ -2,17 +2,10 @@ package array;
 
 
 public class Array {
-    public static void main(String[] args) {
-        int[][] arr;
-        getArray1(arr);
-    }
-
-    public static void getArray(int[] arr, int[][] arr2, int[][][] arr3) {
-
-    }
-
-
-    public static void getArray1(int[][] arr) {
-
+    public void run() {
+        // Might be allocate memory for them
+        // Reassign -> object
+        // int[] arr;
+        int[][] arr = new int[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
     }
 }

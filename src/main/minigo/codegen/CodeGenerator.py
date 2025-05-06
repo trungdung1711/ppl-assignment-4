@@ -9,6 +9,8 @@
 from Utils import *
 # from StaticCheck import *
 # 5/2/2025
+# 6/2/2025
+from enum import Enum
 # instead of StaticCheck
 from Visitor import *
 # from Utils import Utils
@@ -50,7 +52,7 @@ class Index(Val):
 
 
 class CName(Val):
-    def __init__(self, value,isStatic=True):
+    def __init__(self, value, isStatic=True):
         #value: String
         self.isStatic = isStatic
         self.value = value
@@ -63,16 +65,19 @@ class CName(Val):
 ####################################################
 # In the case of Go (help to prevent semantic meaning):
 # Object (named thing):
-# - Var
-# - Const
+# - Var     | using Symbol
+# - Const   | using Symbol
 # - TypeName    - no need (global)
-# - Func        - no need (global)
+# - Func        - no need (global) - should be method
 ####################################################
 class Symbol:
-    def __init__(self,name,mtype,value = None):
-        self.name = name        # name of this
-        self.mtype = mtype      # type of Var or Const
-        self.value = value      # index or CName
+    def __init__(self, name, mtype, index, is_static):
+        self.name       = name       # name
+        self.mtype      = mtype      # type of Var/Const
+        # flatten that field
+        # self.value      = value      # index or CName
+        self.is_static  = is_static
+        self.index      = index
 
     # def __str__(self):
     #     return "Symbol(" + str(self.name) + "," + str(self.mtype) + ("" if self.value is None else "," + str(self.value)) + ")"
@@ -623,16 +628,23 @@ class Scope:
         flatten = [obj for scope in self.lst for obj in scope]
         reverse_flatten = flatten[::-1]
         return next(filter(lambda obj: obj.name == name, reverse_flatten), None)
-    
 
-class FifthPass(BaseVisitor):
+
+# we must know the type of it
+# var a int ->  know the type
+# var a = 10 -> must use the expression for that
+class FourthPass(BaseVisitor):
     def __init__(self, ast, emitter):
-        self.ast        = ast
-        self.emitter    = emitter
+        self.ast             = ast
+        self.main_emitter    = emitter
 
 
     def go(self):
-        pass
+        self.visit(self.ast, None)
+
+
+    def visitProgram(self, ast, o):
+        [self.visit(decl, None) for decl in ast.decl]
 
 
     def visitVarDecl(self, ast, o):
@@ -768,9 +780,17 @@ class CodeGenerator(BaseVisitor, Utils):
         # generate all interface files
         third_pass = ThirdPass(ast, self.class_emitters, structs_interfaces)
         third_pass.go()
-        third_pass.debug_write()
+        # third_pass.debug_write()
 
-        # 4. final pass: generate the:
+        # 4. fourth pass: prepare the MiniGoClass.j initialization
+        # generate all .field static for struct
+        # generate simple <init>
+
+        # <clinit> would require the generation of expression
+        # then this would be handled in the final pass
+        # generate <clinit>
+
+        # 5. final pass: generate the:
         # - global field    -> .field static
         # - constant field  -> .field final static
         #   if initialisation -> must be done in the <clinit>
@@ -786,12 +806,31 @@ class CodeGenerator(BaseVisitor, Utils):
         # 2. generate .field static in GlobalClass
         # jvm provides us with getstatic and putstatic <class>/name type
         # we could store the buffer in different place, before rearrange them
+        # must follow the scoping rules for program correctness
+        # jvm allows, but minigo doesn't allow
+        # we know that minigo doesn't do that, but it could
+        # lead to confusion?
+
+        # or NOTE:
+        # we can generate all static fields in the first place
+        # along with the <clinit> and <init>
+        # then for this pass, we just create Symbol and
+        # add that to the scope, this allows the program correctness
+        # as we would resolve to the correct Symbol
+        # and java allows we can access to any static in any order
 
         # in MiniGoClass.j
-        # [static]-[init]-[function]-[clinit]
+        # [static]-[init]-///-[function]-[clinit]
+        # must follow the scope rule for correctly resolve
+
         # for the <clinit>, visit the static field again
         # if there are expression in init part, visit that part
         # to genrate the value and putstatic
+        
+        # we require to resolve the id, to check that
+        # if it is declared locally (stored in the local variable array)
+        # if it is declared globally (must access using getStatic and putStatic)
+        # different from Object, defined by type?
         # pass 5?
 
         # struct/interface
@@ -927,8 +966,24 @@ class CodeGenerator(BaseVisitor, Utils):
         env['frame'].exitScope()
         return o
     
+    class Operator(Enum):
+        ADD     = '+'
+        SUB     = '-' #
+        MUL     = '*'
+        DIV     = '/'
+        MOD     = '%'
+        EQ      = '=='
+        NEQ     = '!='
+        LT      = '<'
+        GT      = '>'
+        LTE     = '<='
+        GTE     = '>='
+        NOT     = '!' #
+        AND     = '&&'
+        OR      = '||'
 
-    def visitExpression(self, ast, o):
+
+    def visitExpr(self, ast, o):
         # wrapper of expression
         pass
 
@@ -940,47 +995,408 @@ class CodeGenerator(BaseVisitor, Utils):
 
     # normal expr
     def visitIntLiteral(self, ast, o):
-        return self.emit.emitPUSHICONST(ast.value, o['frame']), IntType()
+        value = ast.value
+        # only return the code and the type from that
+        # others will buffer or printout that code for us
+        # must use the current emitter (actually any)
+        # must pass the current frame to simulate the operand stack
+        # for type inference, used by assign or declaration to create
+        # new variable, we have to return the type
+        # ----------------
+        # var a = 100 - 49
+        # var b = a + 4
+        emitter : Emitter   = o[0]
+        frame : Frame       = o[1]
+        # operand stack is just like registers
+        return emitter.emitPUSHICONST(value, frame), INTTYPE
 
 
     # normal expr
     def visitFloatLiteral(self, ast, o):
-        return None
+        value = ast.value
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+
+        return emitter.emitPUSHFCONST(value, frame), FLOATTYPE
+
+
+    # normal expr
+    def visitBooleanLiteral(self, ast, o):
+        value = ast.value
+        # change from True, False -> true, false
+        # type descriptor is Z
+        # but operate using int value iconst, iload
+        value = str(value).lower()
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        return emitter.emitPUSHICONST(value, frame), BOOLTYPE
     
 
     # normal expr
-    def visitBinaryOp(self, param):
-        return None
-
-
-    # normal expr
-    def visitUnaryOp(self, param):
-        return None
+    def visitStringLiteral(self, ast, o):
+        value = ast.value
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        return emitter.emitPUSHCONST(value, STRTYPE, frame), STRTYPE
     
 
     # normal expr
-    def visitBooleanLiteral(self, param):
-        return None
-
-
-    # normal expr
-    def visitStringLiteral(self, param):
-        return None
-
-
-    # normal expr
-    def visitArrayLiteral(self, param):
-        return None
+    # don't care about the size
+    # it is just the Object
+    # create a new object of array literal
+    # but we need either the dimen or the initialization
+    # the size can be found at run-time, so
+    # it is ok about that
+    # [3][4][5][6]int{} -> static check would ensure
+    # this is totally correct
     
+    # we are sure that the type is correct
+    # [5][2]int {{2, 3}, {4, 5}, {6, 7}, {3, 2}, {5, 6}}
+    # Based on the dimension, and collect the list?
+
+    # from the array literal -> deduce size -> difficult?
+    # we have [expr][expr][expr]int -> create from that
+    # and because the value to be corrected, then no need
+    # to worry about that
+    def visitArrayLiteral(self, ast, o):
+        # the value is just primitive
+        # int, float, boolean, String
+        # not the object
+
+        # so, there is no array of referece?
+        pass
+
 
     # normal expr
-    def visitStructLiteral(self, param):
+    def visitNilLiteral(self, ast, o):
         return None
 
 
     # normal expr
-    def visitNilLiteral(self, param):
+    def visitStructLiteral(self, ast, o):
         return None
+
+
+    # normal expr
+    def visitBinaryOp(self, ast, o):
+        op = ast.op
+        x = ast.left
+        y = ast.right
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        result_x, type_x = self.visitExpr(x, (emitter, frame))
+        result_y, type_y = self.visitExpr(y, (emitter, frame))
+        identical = SecondPass.identical
+
+        code = list()
+
+        if op == CodeGenerator.Operator.ADD.value:
+            # + - type check in done
+            # 1 + 1
+            # 1.4 + 1.5
+            # 1 + 1.5
+            # 1.5 + 1
+            # "str" + "str"
+            if identical(type_x, INTTYPE) and identical(type_y, INTTYPE):
+                # just add them together, because they are the same type
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitADDOP('+', INTTYPE, frame)
+                )
+                return ''.join(code), INTTYPE
+
+            elif identical(type_x, FLOATTYPE) and identical(type_x, FLOATTYPE):
+                # add normal and generate the fadd
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitADDOP('+', FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+
+            elif identical(type_x, STRTYPE) and identical(type_x, STRTYPE):
+                # must use the StringBuilder
+                code.append(
+                    emitter.emitSTRINGADD(frame, result_x, result_y)
+                )
+                return ''.join(code), STRTYPE
+
+            elif identical(type_x, FLOATTYPE):
+                # must change the type before doing that
+                # job of compiler, change y value to float
+                # and perform float add
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+                code.append(
+                    emitter.emitADDOP('+', FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+
+            elif identical(type_y, FLOATTYPE):
+                # must change the type before add
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitADDOP('+', FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+            
+        elif op == CodeGenerator.Operator.SUB.value:
+            # -
+            if identical(type_x, INTTYPE) and identical(type_y, INTTYPE):
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitADDOP('-', INTTYPE, frame)
+                )
+                return ''.join(code), INTTYPE
+
+            elif identical(type_x, FLOATTYPE) and identical(type_x, FLOATTYPE):
+                # add normal and generate the fadd
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitADDOP('-', FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+            
+            elif identical(type_x, FLOATTYPE):
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+                code.append(
+                    emitter.emitADDOP('-', FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+
+            elif identical(type_y, FLOATTYPE):
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitADDOP('-', FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+            
+        elif op == CodeGenerator.Operator.MUL.value or \
+            op == CodeGenerator.Operator.DIV.value:
+            # *, /
+            if identical(type_x, INTTYPE) and identical(type_y, INTTYPE):
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitMULOP(op, INTTYPE, frame)
+                )
+                return ''.join(code), INTTYPE
+
+            elif identical(type_x, FLOATTYPE) and identical(type_x, FLOATTYPE):
+                # add normal and generate the fadd
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitMULOP(op, FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+            
+            elif identical(type_x, FLOATTYPE):
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+                code.append(
+                    emitter.emitMULOP(op, FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+
+            elif identical(type_y, FLOATTYPE):
+                code.append(
+                    result_x
+                )
+
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+                code.append(
+                    result_y
+                )
+
+                code.append(
+                    emitter.emitMULOP(op, FLOATTYPE, frame)
+                )
+                return ''.join(code), FLOATTYPE
+        
+        elif op == CodeGenerator.Operator.MOD.value:
+            code.append(
+                result_x
+            )
+
+            code.append(
+                result_y
+            )
+
+            code.append(
+                emitter.emitMOD(frame)
+            )
+
+            return ''.join(code), INTTYPE
+        
+        elif op == CodeGenerator.Operator.EQ.value or \
+            op == CodeGenerator.Operator.NEQ.value or \
+            op == CodeGenerator.Operator.NEQ.value:
+            code.append(
+                result_x
+            )
+
+            code.append(
+                result_y
+            )
+
+            if identical(type_x, INTTYPE) and identical(type_y, INTTYPE):
+                pass
+
+            elif identical(type_x, FLOATTYPE) and identical(type_y, FLOATTYPE):
+                pass
+
+            elif identical(type_x, STRTYPE) and identical(type_y, STRTYPE):
+                pass
+
+
+    # normal expr
+    # type checking is done right now
+    # no worry about that
+    def visitUnaryOp(self, ast, o):
+        op      = ast.op
+        expr    = ast.body
+
+        emitter : Emitter   = o[0]
+        frame   : Frame     = o[1]
+        result, typ = self.visitExpr(expr, (emitter, frame))
+
+
+        if op == CodeGenerator.Operator.SUB.value:
+            # - _ -type is the same
+            return emitter.emitNEGOP(typ, frame), typ
+
+        elif op == CodeGenerator.Operator.NOT.value:
+            # must generate code for that boolean
+            # because jvm doesn't support
+            # ! _
+            false_label = frame.getNewLabel()
+            end_label = frame.getNewLabel()
+
+            code = list()
+            
+            code.append(result)
+
+            code.append(
+                emitter.emitIFFALSE(false_label, frame)
+            )
+
+            code.append(
+                emitter.emitPUSHICONST('false', frame)
+            )
+
+            code.append(
+                emitter.emitGOTO(end_label, frame)
+            )
+
+            code.append(
+                emitter.emitLABEL(false_label, frame)
+            )
+
+            code.append(
+                emitter.emitPUSHICONST('true', frame)
+            )
+
+            code.append(
+                emitter.emitLABEL(end_label, frame)
+            )
+            
+            return ''.join(code), typ
 
 
     # expr + type (search in symbol for expr, type -> get?)
@@ -992,7 +1408,7 @@ class CodeGenerator(BaseVisitor, Utils):
             return self.emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o['frame']),sym.mtype
     
 
-    def visitConstDecl(self, param):
+    def visitConstDecl(self, ast, o):
         return None
 
 
@@ -1004,59 +1420,59 @@ class CodeGenerator(BaseVisitor, Utils):
         return None
 
 
-    def visitPrototype(self, param):
+    def visitPrototype(self, ast, o):
         return None
 
 
-    def visitIntType(self, param):
+    def visitIntType(self, ast, o):
         return None
 
 
-    def visitFloatType(self, param):
+    def visitFloatType(self, ast, o):
         return None
 
 
-    def visitBoolType(self, param):
+    def visitBoolType(self, ast, o):
         return None
 
 
-    def visitStringType(self, param):
+    def visitStringType(self, ast, o):
         return None
     
 
-    def visitVoidType(self, param):
+    def visitVoidType(self, ast, o):
         return None
 
 
-    def visitArrayType(self, param):
+    def visitArrayType(self, ast, o):
         return None
 
 
-    def visitStructType(self, param):
+    def visitStructType(self, ast, o):
         return None
 
 
-    def visitInterfaceType(self, param):
+    def visitInterfaceType(self, ast, o):
         return None
 
 
-    def visitAssign(self, param):
+    def visitAssign(self, ast, o):
         return None
 
 
-    def visitIf(self, param):
+    def visitIf(self, ast, o):
         return None
 
 
-    def visitForBasic(self, param):
+    def visitForBasic(self, ast, o):
         return None
 
 
-    def visitForStep(self, param):
+    def visitForStep(self, ast, o):
         return None
 
 
-    def visitForEach(self, param):
+    def visitForEach(self, ast, o):
         return None
     
 

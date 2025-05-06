@@ -133,10 +133,16 @@ class Emitter():
             i = in_
             if i >= -1 and i <=5:
                 return self.jvm.emitICONST(i)
+            
             elif i >= -128 and i <= 127:
                 return self.jvm.emitBIPUSH(i)
+            
             elif i >= -32768 and i <= 32767:
                 return self.jvm.emitSIPUSH(i)
+            
+            else:
+                return self.jvm.emitLDC(str(i))
+
         elif type(in_) is str:
             if in_ == "true":
                 return self.emitPUSHICONST(1, frame)
@@ -169,9 +175,11 @@ class Emitter():
         
         if type(typ) is IntType:
             return self.emitPUSHICONST(in_, frame)
+
         elif type(typ) is StringType:
             frame.push()
             return self.jvm.emitLDC(in_)
+
         else:
             raise IllegalOperandException(in_)
 
@@ -236,6 +244,8 @@ class Emitter():
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
         
+        # must handle different cases of Id
+        # if it is static -> get static
         elif isinstance(inType, Id):
             # then this is the object [JVM stores it in heap]
             # we would use reference to work with it
@@ -808,4 +818,67 @@ class Emitter():
 
     def emit_line(self, number : int):
         code = [self.jvm.END for i in range(number)]
+        return ''.join(code)
+    
+
+    def emitDEFAULTINIT(self, frame):
+        frame.pop()
+        typ = Method('<init>', [], VoidType())
+        type_descriptor = self.getJVMType(typ)
+        return self.jvm.emitINVOKESPECIAL('<int>', type_descriptor)
+    
+
+    def emitNEW(self, name, frame):
+        # ... -> ... ref
+        frame.push()
+        return self.jvm.emitNEW(name)
+    
+
+    # abstraction
+    def emitSTRINGADD(self, frame, codeX, codeY):
+        # ...str, str -> str
+        
+        # 1. must create the StringBuilder
+        code = list()
+        code.append(
+            self.emitNEW('java/lang/StringBuilder', frame)
+        )
+
+        # 2. dupplicate that ref
+        code.append(
+            self.emitDUP(frame)
+        )
+
+        code.append(
+            self.emitDEFAULTINIT(frame)
+        )
+
+        # code to calculate string X
+        code.append(
+            codeX
+        )
+
+        # call append
+        append = Method('append', [Class('java/lang/String')], Class('java/lang/StringBuilder'))
+        code.append(
+            self.emitINVOKEVIRTUAL('append', append, frame)
+        )
+
+        # generate code for Y
+        code.append(
+            codeY
+        )
+
+        # call append one more time, take 2 return 1
+        code.append(
+            self.emitINVOKEVIRTUAL('append', append, frame)
+        )
+
+        # call to string and return
+        toString = Method('toString', [], Class('java/lang/String'))
+        code.append(
+            self.emitINVOKEVIRTUAL('toString', toString, frame)
+        )
+
+        # now the result is in the operand stack
         return ''.join(code)

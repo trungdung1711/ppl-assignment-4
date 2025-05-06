@@ -8,5 +8,8 @@ public class Dog {
 	public void attack(Animal a) {
 		a.getBool();
 		attack(a);
+		int b = down;
 	}
+
+	public static int down;
 }
