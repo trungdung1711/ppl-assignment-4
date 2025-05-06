@@ -1326,7 +1326,11 @@ class CodeGenerator(BaseVisitor, Utils):
         
         elif op == CodeGenerator.Operator.EQ.value or \
             op == CodeGenerator.Operator.NEQ.value or \
-            op == CodeGenerator.Operator.NEQ.value:
+            op == CodeGenerator.Operator.GT.value or \
+            op == CodeGenerator.Operator.LT.value or \
+            op == CodeGenerator.Operator.GTE.value or \
+            op == CodeGenerator.Operator.LTE.value :
+            # just handle the case of int first
             code.append(
                 result_x
             )
@@ -1336,13 +1340,35 @@ class CodeGenerator(BaseVisitor, Utils):
             )
 
             if identical(type_x, INTTYPE) and identical(type_y, INTTYPE):
-                pass
+                code.append(
+                    emitter.emitREOP(op, INTTYPE, frame)
+                )
+                return ''.join(code), BOOLTYPE
 
             elif identical(type_x, FLOATTYPE) and identical(type_y, FLOATTYPE):
                 pass
 
             elif identical(type_x, STRTYPE) and identical(type_y, STRTYPE):
+                
                 pass
+
+        elif op == CodeGenerator.Operator.AND.value or \
+            op == CodeGenerator.Operator.OR.value:
+
+            func = emitter.emitOROP if op == '||' else emitter.emitANDOP
+            code.append(
+                result_x
+            )
+
+            code.append(
+                result_y
+            )
+
+            code.append(
+                func(frame)
+            )
+
+            return ''.join(code), BOOLTYPE
 
 
     # normal expr
