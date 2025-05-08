@@ -792,7 +792,7 @@ class CodeGenerator(BaseVisitor, Utils):
     def init(self, ast, dir):
         self.main_emitter   = Emitter(dir + '/' + self.className + '.j', self.className)
         # self.global_emitter = Emitter(dir + '/' + 'GlobalClass'  + '.j')
-        
+
         # mem = [
         #     Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
         #     Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
@@ -996,7 +996,10 @@ class CodeGenerator(BaseVisitor, Utils):
         self.structs_fields = fourth_pass.go()
         
 
-        # pass 4
+        # pass 5 
+        self.addDefaultFunctions()
+
+
         self.visit(ast, None)
         self.done()
 
@@ -1008,14 +1011,25 @@ class CodeGenerator(BaseVisitor, Utils):
         # the <class> must be defined as fully resolved
         # invokestatic io/putInt
         # invokestatic MiniGoClass/Add
-        self.functions['putInt']    = StaticMethod('putInt', [INTTYPE], VOID, 'io')
-        self.functions['putIntLn']  = StaticMethod('putIntLn', [INTTYPE], VOID, 'io')
-        mem = [
-        Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
-        Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
-        Symbol('putFloat',  MType([FloatType()],    VoidType()),    CName('io', True)),
-        Symbol('putFloatLn',MType([FloatType()],    VoidType()),    CName('io', True))
-            ]
+        self.functions['putInt']       = StaticMethod('putInt', [INTTYPE], VOID, 'io')
+        self.functions['putIntLn']     = StaticMethod('putIntLn', [INTTYPE], VOID, 'io')
+        self.functions['putFloat']     = StaticMethod('putFloat', [FLOATTYPE], VOID, 'io')
+        self.functions['putFloatLn']   = StaticMethod('putFloatLn', [FLOATTYPE], VOID, 'io')
+        self.functions['getInt']       = StaticMethod('getInt', [], INTTYPE, 'io')
+        self.functions['getFloat']     = StaticMethod('getFloat', [], FLOATTYPE, 'io')
+        self.functions['getBool']      = StaticMethod('getBool', [], BOOLTYPE, 'io')
+        self.functions['putBool']      = StaticMethod('putBool', [BOOLTYPE], VOID, 'io')
+        self.functions['putBoolLn']    = StaticMethod('putBoolLn', [BOOLTYPE], VOID, 'io')
+        self.functions['getString']    = StaticMethod('getString', [], STRTYPE, 'io')
+        self.functions['putString']    = StaticMethod('putString', [STRTYPE], VOID, 'io')
+        self.functions['putStringLn']  = StaticMethod('putStringLn', [STRTYPE], VOID, 'io')
+        self.functions['putLn']        = StaticMethod('putLn', [], VOID, 'io')
+        # mem = [
+        # Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
+        # Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
+        # Symbol('putFloat',  MType([FloatType()],    VoidType()),    CName('io', True)),
+        # Symbol('putFloatLn',MType([FloatType()],    VoidType()),    CName('io', True))
+        #     ]
 
 
     # NOTE:
@@ -1609,7 +1623,21 @@ class CodeGenerator(BaseVisitor, Utils):
         # the parent will link that
         # to the method/function/if/for
         if isinstance(ast, FuncCall):
-            pass
+            # just do the same as the expression
+            # but don't return the type
+            # and we would ignore the value returned back
+            # but this is ensured
+            emitter : Emitter = o[0]
+            frame : Frame = o[1]
+            code = list()
+            static_method = self.findFunction(ast.funName)
+            result, typ = self.visitExpr(ast, o)
+            code.append(result)
+            if not isinstance(static_method.result, VoidType):
+                code.append(
+                    emitter.emitPOP(frame)
+                )
+            return ''.join(code)
 
         elif isinstance(ast, MethCall):
             pass
@@ -1687,7 +1715,22 @@ class CodeGenerator(BaseVisitor, Utils):
             field = self.findField(result_type.name, name)
 
             return ''.join(code), field.mtype
+        
 
+        elif isinstance(ast, FuncCall):
+            name = ast.funName
+            arguments = ast.args
+
+            static_method = self.findFunction(name)
+            code = list()
+            for arg in arguments:
+                result, typ = self.visitExpr(arg, o)
+                code.append(result)
+            
+            code.append(emitter.emitINVOKESTATIC(static_method.invoke(), static_method, frame))
+
+            return ''.join(code), static_method.result
+        
         else:
             return self.visit(ast, o)
 

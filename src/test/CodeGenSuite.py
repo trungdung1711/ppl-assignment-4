@@ -177,122 +177,97 @@ class CheckCodeGenSuite(unittest.TestCase):
         input = \
             '''
             func main() {
-                var a int;
+                // var name String = getString()
+                // putStringLn("Your name is: " + name)
+                var a int = 10
+                putInt(a)
                 return
-            }
-
-            type Entity interface {
-                getNumber() int
-            }
-
-            func (d Dog) eat() {
-                return
-            }
-
-            func CreateDog(name string, age int) Dog {
-                return Dog{name : "zun", age : 10}
-            }
-
-            func (d Dog) getName() string {
-                return d.name
-            }
-
-            func (d Dog) getAge() int {
-                return d.age
-            }
-
-            func (d Dog) getDogs() {
-                return
-            }
-
-            type Dog struct {
-                name string
-                age int
-                parents [3][4]Dog
-                entity Entity
             }
             '''
-        expect = ''
+        expect = '10'
 
         self.assertTrue(TestCodeGen.test(input, expect, 508))
 
 
-    # def test_509(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    def test_509(self):
+        input = \
+        '''
+        func main() {
+            var a int = 10
+            var b float = 3.14
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 509))
+            putFloatLn(a + b)
+            return
+        }
+        '''
+        expect = '13.14\n'
+
+        self.assertTrue(TestCodeGen.test(input, expect, 509))
 
 
-    # def test_510(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    def test_510(self):
+        input = \
+        '''
+        func main() {
+            var a = true
+            var b = false
+            var c = true
+            putBool(a && b || c)
+            return
+        }
+        '''
+        expect = 'true'
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 510))
+        self.assertTrue(TestCodeGen.test(input, expect, 510))
 
-    # def test_511(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    def test_511(self):
+        input = \
+        '''
+        func main() {
+            var result boolean = true && (false || false) && ((true && false) || false) && false
+            putBoolLn(result)
+            return
+        }
+        '''
+        expect = 'false\n'
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 511))
+        self.assertTrue(TestCodeGen.test(input, expect, 511))
 
-    # def test_512(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    def test_512(self):
+        input = \
+        '''
+        func main() {
+            var a int = 100
+            var b = 100
+            putIntLn(Add(a, b))
+            putIntLn(Sub(a, b))
+            putIntLn(Mul(a, b))
+            putIntLn(Div(a, b))
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 512))
+            putString("End")
+
+            return
+        }
+
+        func Add(a int, b int) int {
+            return a + b
+        }
+
+        func Sub(a int, b int) int {
+            return a - b
+        }
+
+        func Mul(a int, b int) int {
+            return a * b
+        }
+
+        func Div(a int, b int) int {
+            return a / b
+        }
+        '''
+        expect = '200\n0\n10000\n1\nEnd'
+
+        self.assertTrue(TestCodeGen.test(input, expect, 512))
 
     # def test_513(self):
     #     input = Program(

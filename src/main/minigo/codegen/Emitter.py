@@ -27,6 +27,10 @@ class StaticMethod:
         self.params     = params      # list of Type (from prof)
         self.result     = result      # Type (from prof)
 
+    
+    def invoke(self):
+        return '/'.join([self.class_name, self.name])
+
 
 class Class:
     def __init__(self, name):
@@ -399,8 +403,8 @@ class Emitter():
         #frame: Frame
 
         typ = in_
-        list(map(lambda x: frame.pop(), typ.partype))
-        if not type(typ.rettype) is VoidType:
+        list(map(lambda x: frame.pop(), typ.params))
+        if not type(typ.result) is VoidType:
             frame.push()
         return self.jvm.emitINVOKESTATIC(lexeme, self.getJVMType(in_))
 
