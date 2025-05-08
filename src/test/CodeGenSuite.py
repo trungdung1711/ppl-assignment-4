@@ -40,157 +40,155 @@ class CheckCodeGenSuite(unittest.TestCase):
     #     self.assertTrue(TestCodeGen.test(input,expect,506))
 
 
-    def test_507(self):
+    # def test_507(self):
+    #     input = \
+    #     '''
+    #     type Dog struct {
+    #         name string
+    #         age int
+    #         cat Cat
+    #         attacker Attacker
+    #     }
+
+    #     type Kikyou struct {
+    #         name string
+    #         age int
+    #         weapon Weapon
+    #         reiryoku float
+    #     }
+
+    #     type Weapon interface {
+    #         Damage() float
+    #     }
+
+    #     type Hiraikotsu struct {
+    #         name string
+    #         damage float
+    #     }
+
+    #     func (h Hiraikotsu) Damage() float {
+    #         return h.damage
+    #     }
+
+    #     type Tessaiga struct {
+    #         name string
+    #         damage float
+    #     }
+
+    #     func (t Tessaiga) Damage() float {
+    #         return 10000.0
+    #     }
+
+    #     type Cat struct {
+    #         name string
+    #         age int
+    #     }
+
+    #     func (c Cat) getType() string {
+    #         return "Cat"
+    #     }
+
+    #     func (c Cat) attack(h Human) boolean {
+    #         return true;
+    #     }
+
+    #     type Attacker interface {
+    #         attack(h Human) boolean 
+    #     }
+
+    #     func (d Dog) getType() string {
+    #         return "Dog"
+    #     }
+
+    #     func (d Dog) getPower() float {
+    #         return 100.100
+    #     }
+
+    #     type Human struct {
+    #         name string
+    #         age int
+    #     }
+
+    #     func (h Human) getType() string {
+    #         return "Humanity"
+    #     }
+
+    #     func (h Human) attack(h Human) boolean {
+    #         return false
+    #     }
+
+    #     func (d Dog) attack(d Human) boolean {
+    #         return true
+    #     }
+
+    #     func (h Human) getNumber() int {
+    #         return 100
+    #     }
+
+    #     type Entity interface {
+    #         getNumber() int
+    #         getPower() float
+    #     }
+
+    #     func (h Human) getPower() float {
+    #         return 50.50
+    #     }
+
+    #     type Animal interface {
+    #         getType() string
+    #     }
+
+    #     type Shippou struct {
+    #         name string
+    #         age int
+    #     }
+
+    #     func (s Shippou) getYouki() float {
+    #         return 50.0
+    #     }
+
+    #     type ShikonNoTama struct {
+    #         name string
+    #         kakera int
+    #     }
+
+    #     func (s ShikonNoTama) Kakera() int {
+    #         return 100
+    #     }
+
+    #     func (h Human) Kill(people [4]People) boolean {
+    #         return True
+    #     }
+
+    #     type Ackujin interface {
+    #         Kill(people [3]People) boolean
+    #     }
+
+    #     type Youkai interface {
+    #         getYouki() float
+    #     }
+    #     '''
+    #     expect = '100'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 507))
+
+
+    def test_508(self):
         input = \
-        '''
-        type Dog struct {
-            name string
-            age int
-            cat Cat
-            attacker Attacker
-        }
+            '''
+            const PI = 3.14
+            func main() {
+                var a int;
+                return
+            }
 
-        type Kikyou struct {
-            name string
-            age int
-            weapon Weapon
-            reiryoku float
-        }
+            func Calculate(a boolean, b boolean) boolean{
+                return a && b
+            }
+            '''
+        expect = ''
 
-        type Weapon interface {
-            Damage() float
-        }
-
-        type Hiraikotsu struct {
-            name string
-            damage float
-        }
-
-        func (h Hiraikotsu) Damage() float {
-            return h.damage
-        }
-
-        type Tessaiga struct {
-            name string
-            damage float
-        }
-
-        func (t Tessaiga) Damage() float {
-            return 10000.0
-        }
-
-        type Cat struct {
-            name string
-            age int
-        }
-
-        func (c Cat) getType() string {
-            return "Cat"
-        }
-
-        func (c Cat) attack(h Human) boolean {
-            return true;
-        }
-
-        type Attacker interface {
-            attack(h Human) boolean 
-        }
-
-        func (d Dog) getType() string {
-            return "Dog"
-        }
-
-        func (d Dog) getPower() float {
-            return 100.100
-        }
-
-        type Human struct {
-            name string
-            age int
-        }
-
-        func (h Human) getType() string {
-            return "Humanity"
-        }
-
-        func (h Human) attack(h Human) boolean {
-            return false
-        }
-
-        func (d Dog) attack(d Human) boolean {
-            return true
-        }
-
-        func (h Human) getNumber() int {
-            return 100
-        }
-
-        type Entity interface {
-            getNumber() int
-            getPower() float
-        }
-
-        func (h Human) getPower() float {
-            return 50.50
-        }
-
-        type Animal interface {
-            getType() string
-        }
-
-        type Shippou struct {
-            name string
-            age int
-        }
-
-        func (s Shippou) getYouki() float {
-            return 50.0
-        }
-
-        type ShikonNoTama struct {
-            name string
-            kakera int
-        }
-
-        func (s ShikonNoTama) Kakera() int {
-            return 100
-        }
-
-        func (h Human) Kill(people [4]People) boolean {
-            return True
-        }
-
-        type Ackujin interface {
-            Kill(people [3]People) boolean
-        }
-
-        type Youkai interface {
-            getYouki() float
-        }
-        '''
-        expect = '100'
-
-        self.assertTrue(TestCodeGen.test(input, expect, 507))
-
-
-    # def test_508(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 508))
+        self.assertTrue(TestCodeGen.test(input, expect, 508))
 
 
     # def test_509(self):

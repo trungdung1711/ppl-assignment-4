@@ -9,10 +9,23 @@ from AST import *
 
 # same concept of MType
 class Method:
-    def __init__(self, name, params, result):
+    def __init__(self, name, params, result, className = 'MiniGoClass'):
         self.name   = name
         self.params = params      # list of Type (from prof)
         self.result = result      # Type (from prof)
+        self.className = className
+
+
+    def invoke(self):
+        return '/'.join([self.className, self.name])
+
+
+class StaticMethod:
+    def __init__(self, name, params, result, class_name):
+        self.class_name = class_name
+        self.name       = name
+        self.params     = params      # list of Type (from prof)
+        self.result     = result      # Type (from prof)
 
 
 class Class:
@@ -100,6 +113,10 @@ class Emitter():
         
         # method descriptor
         elif isinstance(inType, Method):
+            return '(' + ''.join(list(map(lambda par: self.getJVMType(par), inType.params))) + ')' + self.getJVMType(inType.result)
+        
+
+        elif isinstance(inType, StaticMethod):
             return '(' + ''.join(list(map(lambda par: self.getJVMType(par), inType.params))) + ')' + self.getJVMType(inType.result)
 
         
@@ -244,6 +261,18 @@ class Emitter():
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
         
+        if type(inType) is BoolType:
+            return self.jvm.emitILOAD(index)
+        
+        elif isinstance(inType, FloatType):
+            return self.jvm.emitFLOAD(index)
+        
+        elif isinstance(IntType, StringType):
+            self.jvm.emitALOAD(index)
+
+        elif isinstance(inType, (Class, Interface)):
+            self.jvm.emitALOAD(index)
+        
         # must handle different cases of Id
         # if it is static -> get static
         elif isinstance(inType, Id):
@@ -286,6 +315,16 @@ class Emitter():
 
         if type(inType) is IntType:
             return self.jvm.emitISTORE(index)
+        
+        elif isinstance(inType, FloatType):
+            return self.jvm.emitFSTORE(index)
+        
+        elif isinstance(inType, BoolType):
+            return self.jvm.emitISTORE(index)
+        
+        elif isinstance(inType, (Class, Interface)):
+            return self.jvm.emitASTORE(index)
+        
         elif type(inType) is ArrayType or type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitASTORE(index)
         else:
@@ -394,10 +433,15 @@ class Emitter():
         #in_: Type
         #frame: Frame
 
+        # params of Method same MType
+
         typ = in_
-        list(map(lambda x: frame.pop(), typ.partype))
+        # pop arguments
+        # pop object
+        list(map(lambda x: frame.pop(), typ.params))
         frame.pop()
-        if not type(typ) is VoidType:
+        if not type(typ.result) is VoidType:
+            # return value
             frame.push()
         return self.jvm.emitINVOKEVIRTUAL(lexeme, self.getJVMType(in_))
 
@@ -497,6 +541,8 @@ class Emitter():
         #frame: Frame
 
         frame.pop()
+        frame.pop()
+        frame.push()
         return self.jvm.emitIAND()
 
     '''
@@ -506,6 +552,8 @@ class Emitter():
         #frame: Frame
 
         frame.pop()
+        frame.pop()
+        frame.push()
         return self.jvm.emitIOR()
 
     def emitREOP(self, op, in_, frame):
@@ -686,6 +734,31 @@ class Emitter():
         if type(in_) is IntType:
             frame.pop()
             return self.jvm.emitIRETURN()
+
+        elif isinstance(in_, BoolType):
+            frame.pop()
+            return self.jvm.emitIRETURN()
+
+        elif isinstance(in_, FloatType):
+            frame.pop()
+            return self.jvm.emitFRETURN()
+
+        elif isinstance(in_, StringType):
+            frame.pop()
+            return self.jvm.emitARETURN()
+
+        elif isinstance(in_, ArrayType):
+            frame.pop()
+            return self.jvm.emitARETURN()
+
+        elif isinstance(in_, Class):
+            frame.pop()
+            return self.jvm.emitARETURN()
+
+        elif isinstance(in_, Interface):
+            frame.pop()
+            return self.jvm.emitARETURN()
+
         elif type(in_) is VoidType:
             return self.jvm.emitRETURN()
 
@@ -821,11 +894,11 @@ class Emitter():
         return ''.join(code)
     
 
-    def emitDEFAULTINIT(self, frame):
+    def emitDEFAULTINIT(self, name, frame):
         frame.pop()
-        typ = Method('<init>', [], VoidType())
+        typ = Method('<init>', [], VoidType(), name)
         type_descriptor = self.getJVMType(typ)
-        return self.jvm.emitINVOKESPECIAL('<int>', type_descriptor)
+        return self.jvm.emitINVOKESPECIAL(typ.invoke(), type_descriptor)
     
 
     def emitNEW(self, name, frame):
@@ -850,7 +923,7 @@ class Emitter():
         )
 
         code.append(
-            self.emitDEFAULTINIT(frame)
+            self.emitDEFAULTINIT('java/lang/StringBuilder', frame)
         )
 
         # code to calculate string X
@@ -859,9 +932,9 @@ class Emitter():
         )
 
         # call append
-        append = Method('append', [Class('java/lang/String')], Class('java/lang/StringBuilder'))
+        append = Method('append', [Class('java/lang/String')], Class('java/lang/StringBuilder'), 'java/lang/StringBuilder')
         code.append(
-            self.emitINVOKEVIRTUAL('append', append, frame)
+            self.emitINVOKEVIRTUAL(append.invoke(), append, frame)
         )
 
         # generate code for Y
@@ -871,13 +944,13 @@ class Emitter():
 
         # call append one more time, take 2 return 1
         code.append(
-            self.emitINVOKEVIRTUAL('append', append, frame)
+            self.emitINVOKEVIRTUAL(append.invoke(), append, frame)
         )
 
         # call to string and return
-        toString = Method('toString', [], Class('java/lang/String'))
+        toString = Method('toString', [], Class('java/lang/String'), 'java/lang/StringBuilder')
         code.append(
-            self.emitINVOKEVIRTUAL('toString', toString, frame)
+            self.emitINVOKEVIRTUAL(toString.invoke(), toString, frame)
         )
 
         # now the result is in the operand stack

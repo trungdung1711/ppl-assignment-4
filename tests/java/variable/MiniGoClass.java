@@ -2,9 +2,10 @@ package variable;
 
 public class MiniGoClass {
     public static void doSomething() {
-        // var a int = 10
-        int a = 10;
-        // var b;
-        int b;
+        int a = 1;
+        float b = 2.0f;
+        boolean c = true;
+        String d = "";
+        Dog e = new Dog();
     }
 }

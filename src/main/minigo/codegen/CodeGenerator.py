@@ -17,7 +17,7 @@ from Visitor import *
 from AST import *
 
 # from StaticError import *
-from Emitter import Emitter, MType, ClassType, Method
+from Emitter import Emitter, MType, ClassType, Method, Class, Interface, StaticMethod
 from Frame import Frame
 from abc import ABC, abstractmethod
 from functools import reduce
@@ -78,6 +78,11 @@ class Symbol:
         # self.value      = value      # index or CName
         self.is_static  = is_static
         self.index      = index
+    
+
+    def getStaticName(self):
+        return '/'.join(['MiniGoClass', self.name])
+
 
     # def __str__(self):
     #     return "Symbol(" + str(self.name) + "," + str(self.mtype) + ("" if self.value is None else "," + str(self.value)) + ")"
@@ -339,13 +344,13 @@ class SecondPass(BaseVisitor):
         # don't call down function
         fun = ast.fun
         param_types = [self.visit(param, None) for param in fun.params]
-        method = Method(fun.name, param_types, fun.retType)
+        method = Method(fun.name, param_types, fun.retType, class_name)
         self.structs[class_name].append(method)
 
 
     def visitFuncDecl(self, ast, o):
         param_types = [self.visit(param, None) for param in ast.params]
-        self.functions[ast.name] = Method(ast.name, param_types, ast.retType)
+        self.functions[ast.name] = StaticMethod(ast.name, param_types, ast.retType, 'MiniGoClass')
 
 
     def visitParamDecl(self, ast, o):
@@ -358,12 +363,12 @@ class SecondPass(BaseVisitor):
         # 2. just allocate the list immediately
         # 3. visit each of the prototype to get the method
         # print(f'Visit interface {ast.name}')
-        method_lists = [self.visit(method, None) for method in ast.methods]
+        method_lists = [self.visit(method, ast.name) for method in ast.methods]
         self.interfaces[ast.name] = method_lists
 
 
     def visitPrototype(self, ast, o):
-        return Method(ast.name, ast.params, ast.retType)
+        return Method(ast.name, ast.params, ast.retType, o)
 
 
     def visitVarDecl(self, ast, o):
@@ -593,6 +598,10 @@ class Scope:
         self.lst = [[]]
 
 
+    def add(self, s):
+        self.lst[-1].append(s)
+
+
     def current(self):
         """return the current scope
 
@@ -708,24 +717,100 @@ class CodeGenerator(BaseVisitor, Utils):
         self.class_emitters     = None
 
         # Can add to the type system, but bypass that
-        self.structs            = None
-        self.interfaces         = None
-        self.functions          = None
+        self.structs            = None      # name - [Method]
+        self.interfaces         = None      # name - [Method]
+        self.functions          = None      # func - [StaticMethod]
         # self.interface_emitters = None
+
+        # buffer for main class
+        self.buff_main          = list()
+        self.buff_fields        = list()
+        self.buff_inits         = list()
+        # self.buff_fields        = list()
+        self.buff_methods       = list()
 
 
     def init(self, ast, dir):
         self.main_emitter   = Emitter(dir + '/' + self.className + '.j', self.className)
         # self.global_emitter = Emitter(dir + '/' + 'GlobalClass'  + '.j')
         
-        mem = [
-            Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
-            Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
-            Symbol('putFloat',  MType([FloatType()],    VoidType()),    CName('io', True)),
-            Symbol('putFloatLn',MType([FloatType()],    VoidType()),    CName('io', True))
-                ]
-        return mem
+        # mem = [
+        #     Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
+        #     Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
+        #     Symbol('putFloat',  MType([FloatType()],    VoidType()),    CName('io', True)),
+        #     Symbol('putFloatLn',MType([FloatType()],    VoidType()),    CName('io', True))
+        #         ]
+        # return mem
     
+
+    def initCLass(self):
+        # NOTE: nothing to do with return type of Frame
+        # frame is used to simulate the operation of the operand
+        # stack, to emit .limit stack and locals correctly
+        frame = Frame('<init>', VOID)
+        method_type = Method('<init>', [], VOID, self.className)
+
+        self.buff_inits.append(
+            self.main_emitter.emitMETHOD('<init>', method_type, False, frame)
+        )
+        # scope of this method
+        frame.enterScope(True)
+
+        # NOTE: JVM will automatically push <this> for us
+        # frame simulates the operand stack
+        this_index = frame.getNewIndex()
+        this_type  = Id(self.className)
+        # .var is used for debugging
+        self.buff_inits.append(self.main_emitter.emitVAR(
+            this_index, 
+            'this', 
+            this_type, 
+            frame.getStartLabel(), 
+            frame.getEndLabel(), 
+            frame))
+        
+        # put label, for other methods, functions
+        # scope are different
+        # NOTE
+        self.buff_inits.append(
+            self.main_emitter.emitLABEL(frame.getStartLabel(), frame)
+        )
+        # read this from local variable array
+        self.buff_inits.append(
+            self.main_emitter.emitREADVAR(
+                'this',
+                this_type,
+                0,
+                frame
+            )
+        )
+        # invoke the <int>
+        self.buff_inits.append(
+            self.main_emitter.emitINVOKESPECIAL(
+                frame
+            )
+        )
+
+        self.buff_inits.append(
+            self.main_emitter.emitLABEL(
+                frame.getEndLabel(), frame
+            )
+        )
+
+        self.buff_inits.append(
+            self.main_emitter.emitRETURN(
+                VOID, frame
+            )
+        )
+
+        # end of the method
+        self.buff_inits.append(
+            self.main_emitter.emitENDMETHOD(
+                frame
+            )
+        )
+        frame.exitScope()
+
 
     def done(self):
         # to write all the buffer to file
@@ -736,11 +821,48 @@ class CodeGenerator(BaseVisitor, Utils):
         # NOTE: Emiiter.emitEPILOG()    -> write buffer to file
 
         # 1. GlobalClass
-        self.global_emitter.emitEPILOG()
+        # self.global_emitter.emitEPILOG()
 
-        # 2. MainClass
+        # 2. MiniGoClass buffer out
+
+        # 3. Other structs
+
+        # Moving all buffer to a main buffer
+        # .class
+        self.main_emitter.buffer(
+            ''.join(self.buff_main)
+        )
+
+        self.main_emitter.buffer(
+            self.main_emitter.emit_line(1)
+        )
+
+        # .field
+        self.main_emitter.buffer(
+            ''.join(self.buff_fields)
+        )
+
+        # .<init>
+        self.main_emitter.buffer(
+            ''.join(self.buff_inits)
+        )
+
+        # .method
+        self.main_emitter.buffer(
+            ''.join(self.buff_methods)
+        )
+
+        # <clinit>
+        self.main_emitter.buffer(
+            ''.join(self.generateclinit())
+        )
+
+        # write to the buffer
+        # write MiniGoClass
         self.main_emitter.emitEPILOG()
-        pass
+
+        # write all the emitter of structs
+        [emitter.emitEPILOG() for name, emitter in self.class_emitters.items()]
 
 
     def gen(self, ast, dir_):
@@ -778,6 +900,8 @@ class CodeGenerator(BaseVisitor, Utils):
         # 3. third pass: generate .class for struct
         # and also fields for struct (prepared for methods)
         # generate all interface files
+
+        # must also remember to produce .implement
         third_pass = ThirdPass(ast, self.class_emitters, structs_interfaces)
         third_pass.go()
         # third_pass.debug_write()
@@ -796,58 +920,41 @@ class CodeGenerator(BaseVisitor, Utils):
         #   if initialisation -> must be done in the <clinit>
         # - function        -> .method static in MiniGoClass.j
         # - method          -> .method for each of the emitter
-
-
-    def visit_global_declaration(self, ast, o):
-        # wrapper of global declarations
-
-        # global variable, const
-        # 1. add to the current scope
-        # 2. generate .field static in GlobalClass
-        # jvm provides us with getstatic and putstatic <class>/name type
-        # we could store the buffer in different place, before rearrange them
-        # must follow the scoping rules for program correctness
-        # jvm allows, but minigo doesn't allow
-        # we know that minigo doesn't do that, but it could
-        # lead to confusion?
-
-        # or NOTE:
-        # we can generate all static fields in the first place
-        # along with the <clinit> and <init>
-        # then for this pass, we just create Symbol and
-        # add that to the scope, this allows the program correctness
-        # as we would resolve to the correct Symbol
-        # and java allows we can access to any static in any order
-
-        # in MiniGoClass.j
-        # [static]-[init]-///-[function]-[clinit]
-        # must follow the scope rule for correctly resolve
-
-        # for the <clinit>, visit the static field again
-        # if there are expression in init part, visit that part
-        # to genrate the value and putstatic
         
-        # we require to resolve the id, to check that
-        # if it is declared locally (stored in the local variable array)
-        # if it is declared globally (must access using getStatic and putStatic)
-        # different from Object, defined by type?
-        # pass 5?
+        # first, we have to generate the main class, first
+        # .source, .class, .super
+        # buffer the init
+        # self.initCLass()
 
-        # struct/interface
-        # skip
+        # then starting traversing the tree
+        # global -> field -> buffer it to the fields
+        # function -> buffer it to the methods
+        # method -> get the correct emitter pass -> generate method of others
+        
+        # finally, generate the <clinit> method for class
+        # then write buffer to files
+        
 
-        # method
-        # 1. use class_emitters -> class
-        # 2. create a new frame to pass
-        # 3. pass the scope to that (chain)
-        # 4. just buffer the code normally
+        # pass 4
+        self.visit(ast, None)
+        self.done()
 
-        # function
-        # 1. create a new frame to pass
-        # 2. pass the scope to that (chain)
-        # 3. special treat for <main>
-        # not really?
-        pass
+
+    def addDefaultFunctions(self):
+        # because this is the mapping between MiniGo
+        # to Java, Function would be mapped to static method
+        # a static method is defined by <class>/<field>
+        # the <class> must be defined as fully resolved
+        # invokestatic io/putInt
+        # invokestatic MiniGoClass/Add
+        self.functions['putInt']    = StaticMethod('putInt', [INTTYPE], VOID, 'io')
+        self.functions['putIntLn']  = StaticMethod('putIntLn', [INTTYPE], VOID, 'io')
+        mem = [
+        Symbol("putInt",    MType([IntType()],      VoidType()),    CName("io", True)),
+        Symbol("putIntLn",  MType([IntType()],      VoidType()),    CName("io", True)),
+        Symbol('putFloat',  MType([FloatType()],    VoidType()),    CName('io', True)),
+        Symbol('putFloatLn',MType([FloatType()],    VoidType()),    CName('io', True))
+            ]
 
 
     # NOTE:
@@ -886,7 +993,26 @@ class CodeGenerator(BaseVisitor, Utils):
     # and struct and interface first
     # and NOTE that there is no static error at this point
     ####################################################
-    def visitProgram(self, ast, c):
+    def visitProgram(self, ast, o):
+        # buffer the init to this part
+        # self.initCLass()
+        self.buff_main.append(
+            self.main_emitter.emitPROLOG(
+                self.className, 'java/lang/Object'
+            )
+        )
+
+        # create the scope to be used
+        emitter = None
+        frame = None
+        scope = Scope()
+
+        [self.visitGlob(decl, (emitter, frame, scope)) for decl in ast.decl]
+
+        # add the <init> MiniGoClass
+        self.initCLass()
+
+        return
         env ={}
         env['env'] = [c]
         self.emit.printout(self.emit.emitPROLOG(self.className, "java.lang.Object"))
@@ -896,12 +1022,197 @@ class CodeGenerator(BaseVisitor, Utils):
         return env
 
 
+    def visitGlob(self, ast, o):
+        # wrapper of global
+        scope : Scope = o[2]
+
+        # case VarDecl, Const
+        # 1. create Symbol, add that to the Scope
+        # 2. Getting the type
+        # 3. create Symbol with static
+        # 4. generate .field and put it into the buff_fields
+        # not the main_emitter buffer
+        fake_frame = Frame('not-used', VOID)
+
+        if isinstance(ast, VarDecl):
+            # generate <init> in the <clinit>
+            name    = ast.varName
+            typ     = ast.varType
+            expr    = ast.varInit
+
+            var_type = None
+            if typ is not None:
+                # get the type
+                var_type = self.visitType(typ, o)
+            else:
+                # type is None, must 
+                # get the type from expression
+
+                # because this is not related
+                # with any kind of frame
+                # not create a new frame
+                # a frame is related to method
+                # then, this is just simulated frame
+                # not generate with method
+                _, var_type = self.visitExpr(expr, (self.main_emitter, fake_frame))
+            
+            # Now I have the type
+            # int, bool, float, String, Dog, Animal
+            # Symbol with static
+            # generate .field
+            symbol = Symbol(name, var_type, -1, True)
+            scope.add(symbol)
+            # then generate the .field in the buff_fields
+            self.buff_fields.append(
+                self.main_emitter.emitATTRIBUTE(name, var_type, True, False, None)
+            )
+
+
+        elif isinstance(ast, ConstDecl):
+            # note that final field in java
+            # perform exactly like another field
+            # but it prevents reassignment of that value
+            # and if it is static, or a object field, it must
+            # contain the initialization -> the expr, 
+            # which can be initilize in <clinint>
+            # .final, then must provide value at compiled time
+            # pass
+            # so quite the same as the VarDecl
+            name = ast.conName
+            expr = ast.iniExpr
+
+            _, const_type = self.visitExpr(expr, (self.main_emitter, fake_frame, scope))
+
+            # now we have the type
+            # create the symbol
+            symbol = Symbol(name, const_type, -1, True)
+            scope.add(symbol)
+
+            self.buff_fields.append(
+                self.main_emitter.emitATTRIBUTE(name, const_type, True, True, None)
+            )
+
+        else:
+            # normal logic
+            self.visit(ast, o)
+
+
+    def findFunction(self, name):
+        # StaticMethod
+        return self.functions[name]
+
+
+    def findMethod(self, className, methodName):
+        method_list = self.structs[className]
+        return next(filter(lambda method: method.name == methodName, method_list), None)
+
+
+    def findMethodI(self, interfaceName, methodName):
+        method_list = self.interfaces[interfaceName]
+        return next(filter(lambda method: method.name == methodName, method_list), None)
+
+
     ####################################################
     # A Frame is considered to be a stack frame in JVM
     # each method invocation, which will create a new
     # frame and push that in the current 'java stack'
     ####################################################
     def visitFuncDecl(self, ast, o):
+        name    = ast.name
+        params  = ast.params
+        result  = ast.retType
+        body    = ast.body
+
+        # emitter -> self.main_emitter
+        # frame -> create
+        scope : Scope = o[2]
+        
+        frame = Frame(name, result)
+
+        type_descriptor = None
+        if name == 'main':
+            # for array
+            frame.getNewIndex()
+            type_descriptor = StaticMethod('main', [ArrayType([VOID], STRTYPE)], VOID, 'MiniGoClass')
+        else:
+            type_descriptor = self.findFunction(name)
+        
+        # Starting generate code
+        code = list()
+
+        code.append(
+            self.main_emitter.emitMETHOD(name, type_descriptor, True, frame)
+        )
+
+        scope.new_scope()
+        frame.enterScope(True)
+        # param in
+        code.append(
+            self.main_emitter.emitLABEL(
+                frame.getStartLabel(), 
+                frame
+            )
+        )
+
+        # visit Parameters to add that to the Scope
+        # Resolve later
+        # And also create the Index to resolve to them
+        [self.visit(param, (self.main_emitter, frame, scope)) for param in params]
+
+        # Now we have to add the Symbol to be resolved later on
+        # in the Scope
+
+        # new create a new scope to visit the body
+        scope.new_scope()
+        frame.enterScope(False)
+        # scope -- always point to the current scope
+        # then we have to pop it correctly
+        code.append(
+            self.main_emitter.emitLABEL(
+                frame.getStartLabel(),
+                frame
+            )
+        )
+
+        # body of the function
+        code.append(
+            self.visit(body, (self.main_emitter, frame, scope))
+        )
+
+
+        code.append(
+            self.main_emitter.emitLABEL(
+                frame.getEndLabel(), 
+                frame
+            )
+        )
+        # out body
+        frame.exitScope()
+        scope.out_scope()
+
+        # end body
+        code.append(
+            self.main_emitter.emitLABEL(
+                frame.getEndLabel(), 
+                frame
+            )
+        )
+
+        code.append(
+            self.main_emitter.emitENDMETHOD(frame)
+        )
+        # out param
+        frame.exitScope()
+        scope.out_scope()
+
+        # done func -> going into buffer
+        # code of a function
+        self.buff_methods.append(
+            ''.join(code)
+        )
+
+        # same thing
+        return
         frame = Frame(ast.name, ast.retType)
         isMain = ast.name == "main"
         if isMain:
@@ -932,7 +1243,160 @@ class CodeGenerator(BaseVisitor, Utils):
         # scope
 
 
+    def visitBlock(self, ast, o):
+        stmts = ast.member
+
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        scope   : Scope   = o[2]
+
+        code = list()
+        # frame.enterScope(False)
+
+        # code.append(
+        #     emitter.emitLABEL(frame.getStartLabel(), frame)
+        # )
+
+        # must generate code for each of the statement
+        # inside this block
+        [code.append(self.visiStmt(stmt, o)) for stmt in stmts]
+
+        # code.append(
+        #     emitter.emitLABEL(frame.getEndLabel(), frame)
+        # )
+
+        # frame.exitScope()
+
+        return ''.join(code)
+
+        return
+        env = o.copy()
+        env['env'] = [[]] + env['env']
+        env['frame'].enterScope(False)
+        self.emit.printout(self.emit.emitLABEL(env['frame'].getStartLabel(), env['frame']))
+        env = reduce(lambda acc,e: self.visit(e,acc),ast.member,env)
+        self.emit.printout(self.emit.emitLABEL(env['frame'].getEndLabel(), env['frame']))
+        env['frame'].exitScope()
+        return o
+
+
+    def visitParamDecl(self, ast, o):
+        # create the Symbol
+        # and add the variable to the current scope
+        # to be used later on?
+        # also create the index for it as well
+        # get it from the Frame, create Symbol to be used
+        # and load later on
+
+        # low level, must load using offset, not name anymore
+        # NAME -> NUMBER/OFFSET
+
+        # mapping from name and offset
+        # refer to a name -> resolve to offset
+
+        name = ast.parName
+        typ = self.visitType(ast.parType, o)
+
+        emitter : Emitter   = o[0]
+        frame : Frame       = o[1]
+        scope : Scope       = o[2]
+        new_index = frame.getNewIndex()
+        symbol = Symbol(name, typ, new_index, False)
+
+        # for debug
+        
+
+        scope.add(symbol)
+
+        return emitter.emitVAR(new_index, name, typ, 1, 2, frame)
+
+
     def visitVarDecl(self, ast, o):
+        name    = ast.varName
+        typ     = ast.varType
+        expr    = ast.varInit
+
+        emitter: Emitter = o[0]
+        frame : Frame    = o[1]
+        scope : Scope    = o[2]
+
+        code = list()
+        # assume local variable
+        # the Global will be handled differently in .field public static I
+        
+        # if there is expr, then generate code of the 
+        # expression and store to the local variable array
+
+        # if there is no expr, 
+
+        # after that create symbol to add to the scope
+
+        # there is expression
+
+        # type coersion as well
+        # interface and struct as well
+        final_type = None
+        index = frame.getNewIndex()
+
+        # var a float = 1 -> OK
+        # must match?
+        # var a float = 1.0
+
+        if typ and expr:
+            # always generate the type
+            # based on the expr, except the case of interface
+            # var a float = int_value
+            result, result_type = self.visitExpr(expr, o)
+            
+            code.append(
+                result
+            )
+
+            if isinstance(typ, FloatType) and isinstance(result_type, IntType):
+                final_type = typ
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+            if not isinstance(typ, Interface):
+                # keep the type of the expression
+                # because it must be the same
+                final_type = result_type
+            
+            else:
+                # interface must keep that Interface
+                final_type = typ
+            
+            code.append(
+                emitter.emitWRITEVAR(name, result_type, index, frame)
+            )
+
+        elif typ and not expr:
+            # generate based on the type
+            final_type = typ
+
+        elif expr and not typ:
+            # generate based on expression
+            # getting the type from the expression
+
+            result, result_type = self.visitExpr(expr, o)
+            final_type = result_type
+            code.append(
+                result
+            )
+
+            code.append(
+                emitter.emitWRITEVAR(name, final_type, index, frame)
+            )
+
+        # creating a new symbol
+        # for other expression to resolve later
+        # on, resolve -> access it again, through the index
+        symbol = Symbol(name, final_type, index, False)
+        scope.add(symbol)
+
+        return ''.join(code)
+    
         if 'frame' not in o: # global var
             o['env'][0].append(Symbol(ast.varName, ast.varType, CName(self.className)))
             self.emit.printout(self.emit.emitATTRIBUTE(ast.varName, ast.varType, True, False, str(ast.varInit.value) if ast.varInit else None))
@@ -948,6 +1412,13 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitFuncCall(self, ast, o):
+        # generate a static method in MiniGoClass
+        # and buffer it in the methods part
+        # create the scope correctly
+        # add the Scope, It won't affect the local variable array
+        # the scope is abstract by using Scope
+        # -> resolve differently
+        return
         sym = next(filter(lambda x: x.name == ast.funName, o['env'][-1]),None)
         env = o.copy()
         env['isLeft'] = False
@@ -956,16 +1427,14 @@ class CodeGenerator(BaseVisitor, Utils):
         return o
 
 
-    def visitBlock(self, ast, o):
-        env = o.copy()
-        env['env'] = [[]] + env['env']
-        env['frame'].enterScope(False)
-        self.emit.printout(self.emit.emitLABEL(env['frame'].getStartLabel(), env['frame']))
-        env = reduce(lambda acc,e: self.visit(e,acc),ast.member,env)
-        self.emit.printout(self.emit.emitLABEL(env['frame'].getEndLabel(), env['frame']))
-        env['frame'].exitScope()
-        return o
-    
+    def generateMain(self, ast, frame):
+        main = StaticMethod('main', [ArrayType([VOID], STRTYPE)], VOID, 'MiniGoClass')
+        self.buff_methods.append(
+            self.main_emitter.emitMETHOD('main', main, True, frame)
+        )
+        return
+
+
     class Operator(Enum):
         ADD     = '+'
         SUB     = '-' #
@@ -983,14 +1452,63 @@ class CodeGenerator(BaseVisitor, Utils):
         OR      = '||'
 
 
-    def visitExpr(self, ast, o):
-        # wrapper of expression
-        pass
-
-
     def visiStmt(self, ast, o):
         # wrapper of statements
-        pass
+        # just return the code
+        # the parent will link that
+        # to the method/function/if/for
+        if isinstance(ast, FuncCall):
+            pass
+
+        elif isinstance(ast, MethCall):
+            pass
+
+        else:
+            return self.visit(ast, o)
+        
+
+    def generateclinit(self):
+        ast = self.astTree
+        # going through VarDecl and ConstDecl
+        # to create the code of expression and
+        # put the value to the getstatic
+        return []
+
+
+    def visitExpr(self, ast, o):
+        # wrapper of expression
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        scope   : Scope   = o[2]
+        if isinstance(ast, Id):
+            # special treat
+            # must resolve using the Scope
+            # Check for the type and load it from the
+            # local variable array or heap if Object
+            # as we are backed by JVM (OOP virtual machine)
+            # then have to check it is static/local
+            # local -> index
+            # static -> getfield
+            code = list()
+            name = ast.name
+            
+            # check for the scope
+            symbol : Symbol = scope.look_up(name)
+            if symbol.is_static:
+                code.append(
+                    emitter.emitGETSTATIC(symbol.getStaticName(), symbol.mtype, frame)
+                )
+
+            else:
+                # local variable
+                code.append(
+                    emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame)
+                )
+            
+            return ''.join(code), symbol.mtype
+
+        else:
+            return self.visit(ast, o)
 
 
     # normal expr
@@ -1084,8 +1602,8 @@ class CodeGenerator(BaseVisitor, Utils):
         y = ast.right
         emitter : Emitter = o[0]
         frame   : Frame   = o[1]
-        result_x, type_x = self.visitExpr(x, (emitter, frame))
-        result_y, type_y = self.visitExpr(y, (emitter, frame))
+        result_x, type_x = self.visitExpr(x, o)
+        result_y, type_y = self.visitExpr(y, o)
         identical = SecondPass.identical
 
         code = list()
@@ -1380,7 +1898,7 @@ class CodeGenerator(BaseVisitor, Utils):
 
         emitter : Emitter   = o[0]
         frame   : Frame     = o[1]
-        result, typ = self.visitExpr(expr, (emitter, frame))
+        result, typ = self.visitExpr(expr, o)
 
 
         if op == CodeGenerator.Operator.SUB.value:
@@ -1427,12 +1945,13 @@ class CodeGenerator(BaseVisitor, Utils):
 
     # expr + type (search in symbol for expr, type -> get?)
     def visitId(self, ast, o):
+        return
         sym = next(filter(lambda x: x.name == ast.name, [j for i in o['env'] for j in i]),None)
         if type(sym.value) is Index:
             return self.emit.emitREADVAR(ast.name, sym.mtype, sym.value.value, o['frame']),sym.mtype
         else:         
             return self.emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o['frame']),sym.mtype
-    
+
 
     def visitConstDecl(self, ast, o):
         return None
@@ -1442,48 +1961,98 @@ class CodeGenerator(BaseVisitor, Utils):
         # emitter .method .end
         # frame
         # scope
+        # getting the correct emitter
+        # and generate the method using the scope
+        # and buffer it
 
-        return None
-
-
-    def visitPrototype(self, ast, o):
-        return None
-
-
-    def visitIntType(self, ast, o):
-        return None
-
-
-    def visitFloatType(self, ast, o):
-        return None
-
-
-    def visitBoolType(self, ast, o):
-        return None
-
-
-    def visitStringType(self, ast, o):
+        # using the emitter and code
+        # buffer it using code
+        # and then buffer it using buffer
+        
+        # getting the emitter to buffer the method to that
+        # emitter code
+        code = list()
+        # generate and buffer the code to the emitter buffer
         return None
     
 
+    def visitType(self, ast, o):
+        # wrapper for type
+        if isinstance(ast, Id):
+            # then we must resolve
+            # using the scope
+            # Var, Const, Named, Func
+            # must be named -> static checking
+            # it can be class, or interface
+            # then we have to check for that
+            # to create the correct way
+            # when loading it to the operand
+            # stack, we can know 
+            # the type to invoke using 
+            # invokeinterface or invokevirtual
+            # must check if it an interface
+            # or it is the struct actually
+
+            name = ast.name
+            if name in self.structs:
+                # class
+                return Class(name)
+            else:
+                # interface
+                return Interface(name)
+
+        else:
+            return self.visit(ast, o)
+
+
+    def visitIntType(self, ast, o):
+        return INTTYPE
+
+
+    def visitFloatType(self, ast, o):
+        return FLOATTYPE
+
+
+    def visitBoolType(self, ast, o):
+        return BOOLTYPE
+
+
+    def visitStringType(self, ast, o):
+        return STRTYPE
+    
+
     def visitVoidType(self, ast, o):
-        return None
+        return VOID
 
 
     def visitArrayType(self, ast, o):
-        return None
+        # [3][4][5]int?
+        return ast
 
 
+    # different - declaration
     def visitStructType(self, ast, o):
         return None
 
 
+    # different - declaration
     def visitInterfaceType(self, ast, o):
         return None
 
 
     def visitAssign(self, ast, o):
-        return None
+        lhs = ast.lhs
+        rhs = ast.rhs
+        
+        # check if the right-hand side is declared
+        # declared -> get that value and modified
+        # not declared -> declared that with the value of expr
+
+        # if left-hand side is object
+        # array access
+
+        # return the code to modify the value
+        return ''
 
 
     def visitIf(self, ast, o):
@@ -1510,8 +2079,30 @@ class CodeGenerator(BaseVisitor, Utils):
         return None
 
 
-    def visitReturn(self, param):
-        return None
+    def visitReturn(self, ast, o):
+        expr = ast.expr
+
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        scope   : Scope   = o[2]
+
+        code = list()
+        if expr:
+            result, result_type = self.visitExpr(expr, o)
+            code.append(
+                result
+            )
+
+            code.append(
+                emitter.emitRETURN(result_type, frame)
+            )
+        else:
+            code.append(
+                emitter.emitRETURN(VOID, frame)
+            )
+
+        return ''.join(code)
+
 
 
     # expr + stmt
@@ -1527,7 +2118,7 @@ class CodeGenerator(BaseVisitor, Utils):
     # expr + stmt
     def visitFieldAccess(self, param):
         return None
-    
 
-    def visitParamDecl(self, ast, o):
-        pass
+
+    def visitPrototype(self, ast, o):
+        return None

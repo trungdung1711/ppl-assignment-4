@@ -21,10 +21,29 @@
   4: return
 .end method
 
-.method public static doSomething()V
-  .limit stack 0
-  .limit locals 0
+.method public static doSomething(IIFLfunction/Dog;)V
+  .limit stack 1
+  .limit locals 8
+  .line 5
+  0: iload_0
+  1: istore 4
   .line 6
+  3: iload_1
+  4: istore 5
+  .line 7
+  6: fload_2
+  7: fstore 6
+  .line 8
+  9: aload_3
+  10: astore 7
+  .line 9
+  12: return
+.end method
+
+.method public static main([Ljava/lang/String;)V
+  .limit stack 0
+  .limit locals 1
+  .line 13
   0: return
 .end method
 

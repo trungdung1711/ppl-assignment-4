@@ -22,12 +22,26 @@
 .end method
 
 .method public static doSomething()V
-  .limit stack 1
-  .limit locals 2
+  .limit stack 2
+  .limit locals 5
+  .line 5
+  0: iconst_1
+  1: istore_0
   .line 6
-  0: bipush 10
-  2: istore_0
+  2: fconst_2
+  3: fstore_1
+  .line 7
+  4: iconst_1
+  5: istore_2
+  .line 8
+  6: ldc ""
+  8: astore_3
   .line 9
-  3: return
+  9: new variable/Dog
+  12: dup
+  13: invokespecial variable/Dog/<init>()V
+  16: astore 4
+  .line 10
+  18: return
 .end method
 
