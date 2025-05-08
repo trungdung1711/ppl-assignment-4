@@ -2,6 +2,7 @@ package variable;
 
 public class MiniGoClass {
     public static void doSomething() {
-        (new Dog()).name = "123";
+        Dog d = new Dog();
+        String name = d.name;
     }
 }

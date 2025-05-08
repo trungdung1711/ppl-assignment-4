@@ -245,6 +245,7 @@ class SecondPass(BaseVisitor):
         self.ast         = ast
         # will be used to search for method descriptor [method call]
         self.structs     = dict()    # name - list[methods]
+        self.structs_fields = dict()
         # will be used to search for method descriptor [method call]
         self.interfaces  = dict()    # name - list[methods]
         # will be used to search for function call
@@ -331,6 +332,9 @@ class SecondPass(BaseVisitor):
     def visitStructType(self, ast, o):
         # init the list for each structs
         self.result[ast.name] = set()
+
+        self.structs_fields[ast.name] = list()
+
 
 
     def visitMethodDecl(self, ast, o):
@@ -643,13 +647,17 @@ class Scope:
 # var a int ->  know the type
 # var a = 10 -> must use the expression for that
 class FourthPass(BaseVisitor):
-    def __init__(self, ast, emitter):
+    def __init__(self, ast, emitter, interfaces, structs):
         self.ast             = ast
         self.main_emitter    = emitter
+        self.interfaces      = interfaces
+        self.structs        = structs
+        self.structs_fields = dict()
 
 
     def go(self):
         self.visit(self.ast, None)
+        return self.structs_fields
 
 
     def visitProgram(self, ast, o):
@@ -673,9 +681,59 @@ class FourthPass(BaseVisitor):
 
 
     def visitStructType(self, ast, o):
-        pass
+        name = ast.name
+        fields = ast.elements
+        # self.structs_fields[name] = list()
+
+        self.structs_fields[name] = [Symbol(field, self.visitType(typ, o), -1, False) for field, typ in fields]
 
 
+    def visitType(self, ast, o):
+        # wrapper for type
+        if isinstance(ast, Id):
+            name = ast.name
+            if name in self.structs:
+                # class
+                return Class(name)
+            else:
+                # interface
+                return Interface(name)
+
+        else:
+            return self.visit(ast, o)
+
+
+    def visitIntType(self, ast, o):
+        return INTTYPE
+
+
+    def visitFloatType(self, ast, o):
+        return FLOATTYPE
+
+
+    def visitBoolType(self, ast, o):
+        return BOOLTYPE
+
+
+    def visitStringType(self, ast, o):
+        return STRTYPE
+    
+
+    def visitVoidType(self, ast, o):
+        return VOID
+
+
+    def visitArrayType(self, ast, o):
+        # [3][4][5]int?
+        return ast
+
+
+    # # different - declaration
+    # def visitStructType(self, ast, o):
+    #     return None
+
+
+    # # different - declaration
     def visitInterfaceType(self, ast, o):
         pass
 
@@ -717,6 +775,7 @@ class CodeGenerator(BaseVisitor, Utils):
         self.class_emitters     = None
 
         # Can add to the type system, but bypass that
+        self.structs_fields     = None
         self.structs            = None      # name - [Method]
         self.interfaces         = None      # name - [Method]
         self.functions          = None      # func - [StaticMethod]
@@ -933,6 +992,8 @@ class CodeGenerator(BaseVisitor, Utils):
         
         # finally, generate the <clinit> method for class
         # then write buffer to files
+        fourth_pass = FourthPass(ast, None, interfaces, structs)
+        self.structs_fields = fourth_pass.go()
         
 
         # pass 4
@@ -1565,6 +1626,11 @@ class CodeGenerator(BaseVisitor, Utils):
         return []
 
 
+    def findField(self, className, fieldName):
+        listField = self.structs_fields[className]
+        return next(filter(lambda field: fieldName == field.name, listField), None)
+
+
     def visitExpr(self, ast, o):
         # wrapper of expression
         emitter : Emitter = o[0]
@@ -1600,6 +1666,27 @@ class CodeGenerator(BaseVisitor, Utils):
 
             
             return ''.join(code), symbol.mtype
+        
+        elif isinstance(ast, FieldAccess):
+            # get field
+            expr = ast.receiver
+            name = ast.field
+
+            result, result_type = self.visitExpr(expr, o)
+            code = list()
+
+            code.append(
+                result
+            )
+
+            # then getfield
+            code.append(
+                emitter.emitGETFIELD('/'.join([result_type.name, name]), result_type, frame)
+            )
+
+            field = self.findField(result_type.name, name)
+
+            return ''.join(code), field.mtype
 
         else:
             return self.visit(ast, o)
@@ -2234,7 +2321,6 @@ class CodeGenerator(BaseVisitor, Utils):
         return ''.join(code)
 
 
-
     # expr + stmt
     def visitMethCall(self, param):
         return None
@@ -2246,8 +2332,8 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     # expr + stmt
-    def visitFieldAccess(self, param):
-        return None
+    def visitFieldAccess(self, ast, o):
+        pass
 
 
     def visitPrototype(self, ast, o):

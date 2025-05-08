@@ -181,17 +181,35 @@ class CheckCodeGenSuite(unittest.TestCase):
                 return
             }
 
+            type Entity interface {
+                getNumber() int
+            }
+
             func (d Dog) eat() {
                 return
             }
 
             func CreateDog(name string, age int) Dog {
                 return Dog{name : "zun", age : 10}
-            } 
+            }
+
+            func (d Dog) getName() string {
+                return d.name
+            }
+
+            func (d Dog) getAge() int {
+                return d.age
+            }
+
+            func (d Dog) getDogs() {
+                return
+            }
 
             type Dog struct {
                 name string
                 age int
+                parents [3][4]Dog
+                entity Entity
             }
             '''
         expect = ''

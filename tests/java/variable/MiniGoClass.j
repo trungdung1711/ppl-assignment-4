@@ -23,14 +23,17 @@
 
 .method public static doSomething()V
   .limit stack 2
-  .limit locals 0
+  .limit locals 2
   .line 5
   0: new variable/Dog
   3: dup
   4: invokespecial variable/Dog/<init>()V
-  7: ldc "123"
-  9: putfield variable/Dog/name Ljava/lang/String;
+  7: astore_0
   .line 6
-  12: return
+  8: aload_0
+  9: getfield variable/Dog/name Ljava/lang/String;
+  12: astore_1
+  .line 7
+  13: return
 .end method
 
