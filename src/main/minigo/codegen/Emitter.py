@@ -261,17 +261,17 @@ class Emitter():
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
         
-        if type(inType) is BoolType:
+        elif type(inType) is BoolType:
             return self.jvm.emitILOAD(index)
         
         elif isinstance(inType, FloatType):
             return self.jvm.emitFLOAD(index)
         
         elif isinstance(IntType, StringType):
-            self.jvm.emitALOAD(index)
+            return self.jvm.emitALOAD(index)
 
         elif isinstance(inType, (Class, Interface)):
-            self.jvm.emitALOAD(index)
+            return self.jvm.emitALOAD(index)
         
         # must handle different cases of Id
         # if it is static -> get static
@@ -955,3 +955,8 @@ class Emitter():
 
         # now the result is in the operand stack
         return ''.join(code)
+    
+
+    def emitNULL(self, frame):
+        frame.push()
+        return self.jvm.INDENT + 'aconst_null' + self.jvm.END

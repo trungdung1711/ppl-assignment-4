@@ -176,14 +176,22 @@ class CheckCodeGenSuite(unittest.TestCase):
     def test_508(self):
         input = \
             '''
-            const PI = 3.14
             func main() {
                 var a int;
                 return
             }
 
-            func Calculate(a boolean, b boolean) boolean{
-                return a && b
+            func (d Dog) eat() {
+                return
+            }
+
+            func CreateDog(name string, age int) Dog {
+                return Dog{name : "zun", age : 10}
+            } 
+
+            type Dog struct {
+                name string
+                age int
             }
             '''
         expect = ''

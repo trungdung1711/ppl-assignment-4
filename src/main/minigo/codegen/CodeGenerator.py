@@ -1243,12 +1243,102 @@ class CodeGenerator(BaseVisitor, Utils):
         # scope
 
 
+    def visitMethodDecl(self, ast, o):
+
+        scope   : Scope   = o[2]
+
+        thisVarName = ast.receiver
+        thisType = self.visitType(ast.recType, o)
+        className = thisType.name
+        methodName = ast.fun.name
+        params = ast.fun.params
+        body = ast.fun.body
+
+        # 0. get the method
+        method = self.findMethod(className, methodName)
+
+        # 1. get the correct emitter
+        emitter : Emitter = self.class_emitters[thisType.name]
+        code = list()
+        # 2. scope and frame created
+        # create a frame
+        frame : Frame = Frame(methodName, method.result)
+
+        # starting generating code
+
+        code.append(
+            emitter.emitMETHOD(methodName, method, False, frame)
+        )
+        # enter scope of this
+        scope.new_scope()
+        frame.enterScope(True)
+        code.append(
+            emitter.emitLABEL(frame.getStartLabel(), frame)
+        )
+
+        # must create and add the this pointer
+        thisIndex = frame.getNewIndex()
+        symbol = Symbol(thisVarName, thisType, thisIndex, False)
+        scope.add(symbol)
+
+        # must create and add this map for param
+        scope.new_scope()
+        frame.enterScope(False)
+        code.append(
+            emitter.emitLABEL(frame.getStartLabel(), frame)
+        )
+
+        # PARAM
+        [self.visit(param, (emitter, frame, scope)) for param in params]
+
+        # BODY
+        scope.new_scope()
+        frame.enterScope(False)
+        code.append(
+            emitter.emitLABEL(frame.getStartLabel(), frame)
+        )
+
+        # MUST VISIT BODY
+        # body of the method
+        code.append(
+            self.visit(body, (emitter, frame, scope))
+        )
+
+        code.append(
+            emitter.emitLABEL(frame.getEndLabel(), frame)
+        )
+        scope.out_scope()
+        frame.exitScope()
+        
+
+        # param
+        code.append(
+            emitter.emitLABEL(frame.getEndLabel(), frame)
+        )
+        scope.out_scope()
+        frame.exitScope()
+
+
+        # this
+        code.append(
+            emitter.emitLABEL(frame.getEndLabel(), frame)
+        )
+        scope.out_scope()
+        code.append(
+            emitter.emitENDMETHOD(frame)
+        )
+        frame.exitScope()
+
+        # buffer
+        emitter.buffer(''.join(code))
+
+
     def visitBlock(self, ast, o):
         stmts = ast.member
 
-        emitter : Emitter = o[0]
-        frame   : Frame   = o[1]
-        scope   : Scope   = o[2]
+        # emitter : Emitter = o[0]
+        # frame   : Frame   = o[1]
+        # scope   : Scope   = o[2]
 
         code = list()
         # frame.enterScope(False)
@@ -1501,9 +1591,13 @@ class CodeGenerator(BaseVisitor, Utils):
 
             else:
                 # local variable
+                # debug
+                # print(symbol.name)
+                # print(emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame))
                 code.append(
                     emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame)
                 )
+
             
             return ''.join(code), symbol.mtype
 
@@ -1587,12 +1681,67 @@ class CodeGenerator(BaseVisitor, Utils):
 
     # normal expr
     def visitNilLiteral(self, ast, o):
-        return None
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        return emitter.emitNULL(frame)
 
 
     # normal expr
     def visitStructLiteral(self, ast, o):
-        return None
+        name = ast.name
+
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        scope   : Scope   = o[2]
+
+        # calling new to create the object
+        # invokespecial to call the <init> -> default Object
+        # for each of the init
+        # visit the expression to get the value
+        # and the value to the field
+
+        # new
+        code = list()
+
+        code.append(
+            emitter.emitNEW(
+                name, 
+                frame
+            )
+        )
+
+        # dup and calling special
+        code.append(
+            emitter.emitDUP(frame)
+        )
+
+        # calling default init
+        code.append(
+            emitter.emitDEFAULTINIT(name, frame)
+        )
+
+        # for each of the init
+        # 1. dup
+        # 2. visit expr -> code
+        # 3. append that code
+        # 4. emit putfield
+        # 5. result would be the reference object in the operand stack
+
+        for field, expr in ast.elements:
+            # SOS
+            code.append(
+                emitter.emitDUP(frame)
+            )
+            result, result_type = self.visitExpr(expr, o)
+            code.append(
+                result
+            )
+
+            code.append(
+                emitter.emitPUTFIELD('/'.join([name, field]), result_type, frame)
+            )
+
+        return ''.join(code), Class(name)
 
 
     # normal expr
@@ -1956,25 +2105,6 @@ class CodeGenerator(BaseVisitor, Utils):
     def visitConstDecl(self, ast, o):
         return None
 
-
-    def visitMethodDecl(self, ast, o):
-        # emitter .method .end
-        # frame
-        # scope
-        # getting the correct emitter
-        # and generate the method using the scope
-        # and buffer it
-
-        # using the emitter and code
-        # buffer it using code
-        # and then buffer it using buffer
-        
-        # getting the emitter to buffer the method to that
-        # emitter code
-        code = list()
-        # generate and buffer the code to the emitter buffer
-        return None
-    
 
     def visitType(self, ast, o):
         # wrapper for type
