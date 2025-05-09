@@ -12,8 +12,6 @@
 .class public array/Array
 .super java/lang/Object
 
-.field arr [[I
-
 .method public <init>()V
   .limit stack 1
   .limit locals 1
@@ -21,5 +19,49 @@
   0: aload_0
   1: invokespecial java/lang/Object/<init>()V
   4: return
+.end method
+
+.method public run()V
+  .limit stack 7
+  .limit locals 2
+  .line 6
+  0: iconst_2
+  1: anewarray [I
+  4: dup
+  5: iconst_0
+  6: iconst_2
+  7: newarray int
+  9: dup
+  10: iconst_0
+  11: iconst_1
+  12: iastore
+  13: dup
+  14: iconst_1
+  15: iconst_2
+  16: iastore
+  17: aastore
+  18: dup
+  19: iconst_1
+  20: iconst_2
+  21: newarray int
+  23: dup
+  24: iconst_0
+  25: iconst_3
+  26: iastore
+  27: dup
+  28: iconst_1
+  29: iconst_4
+  30: iastore
+  31: aastore
+  32: astore_1
+  .line 8
+  33: aload_1
+  34: iconst_1
+  35: aaload
+  36: iconst_2
+  37: iconst_4
+  38: iastore
+  .line 9
+  39: return
 .end method
 

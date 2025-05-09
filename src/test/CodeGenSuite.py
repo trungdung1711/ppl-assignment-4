@@ -173,1771 +173,368 @@ class CheckCodeGenSuite(unittest.TestCase):
     #     self.assertTrue(TestCodeGen.test(input, expect, 507))
 
 
-    def test_508(self):
-        input = \
-            '''
-            func main() {
-                // var name String = getString()
-                // putStringLn("Your name is: " + name)
-                var a int = 10
-                putInt(a)
-                return
-            }
-            '''
-        expect = '10'
+    # def test_508(self):
+    #     input = \
+    #         '''
+    #         func main() {
+    #             // var name String = getString()
+    #             // putStringLn("Your name is: " + name)
+    #             var a int = 10
+    #             putInt(a)
+    #             return
+    #         }
+    #         '''
+    #     expect = '10'
 
-        self.assertTrue(TestCodeGen.test(input, expect, 508))
-
-
-    def test_509(self):
-        input = \
-        '''
-        func main() {
-            var a int = 10
-            var b float = 3.14
-
-            putFloatLn(a + b)
-            return
-        }
-        '''
-        expect = '13.14\n'
-
-        self.assertTrue(TestCodeGen.test(input, expect, 509))
+    #     self.assertTrue(TestCodeGen.test(input, expect, 508))
 
 
-    def test_510(self):
-        input = \
-        '''
-        func main() {
-            var a = true
-            var b = false
-            var c = true
-            putBool(a && b || c)
-            return
-        }
-        '''
-        expect = 'true'
+    # def test_509(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 10
+    #         var b float = 3.14
 
-        self.assertTrue(TestCodeGen.test(input, expect, 510))
+    #         putFloatLn(a + b)
+    #         return
+    #     }
+    #     '''
+    #     expect = '13.14\n'
 
-    def test_511(self):
-        input = \
-        '''
-        func main() {
-            var result boolean = true && (false || false) && ((true && false) || false) && false
-            putBoolLn(result)
-            return
-        }
-        '''
-        expect = 'false\n'
+    #     self.assertTrue(TestCodeGen.test(input, expect, 509))
 
-        self.assertTrue(TestCodeGen.test(input, expect, 511))
 
-    def test_512(self):
-        input = \
-        '''
-        func main() {
-            var a int = 100
-            var b = 100
-            putIntLn(Add(a, b))
-            putIntLn(Sub(a, b))
-            putIntLn(Mul(a, b))
-            putIntLn(Div(a, b))
+    # def test_510(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a = true
+    #         var b = false
+    #         var c = true
+    #         putBool(a && b || c)
+    #         return
+    #     }
+    #     '''
+    #     expect = 'true'
 
-            putString("End")
+    #     self.assertTrue(TestCodeGen.test(input, expect, 510))
 
-            return
-        }
 
-        func Add(a int, b int) int {
-            return a + b
-        }
+    # def test_511(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var result boolean = true && (false || false) && ((true && false) || false) && false
+    #         putBoolLn(result)
+    #         return
+    #     }
+    #     '''
+    #     expect = 'false\n'
 
-        func Sub(a int, b int) int {
-            return a - b
-        }
 
-        func Mul(a int, b int) int {
-            return a * b
-        }
+    #     self.assertTrue(TestCodeGen.test(input, expect, 511))
 
-        func Div(a int, b int) int {
-            return a / b
-        }
-        '''
-        expect = '200\n0\n10000\n1\nEnd'
 
-        self.assertTrue(TestCodeGen.test(input, expect, 512))
+    # def test_512(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 100
+    #         var b = 100
+    #         putIntLn(Add(a, b))
+    #         putIntLn(Sub(a, b))
+    #         putIntLn(Mul(a, b))
+    #         putIntLn(Div(a, b))
+
+    #         putString("End")
+
+    #         return
+    #     }
+
+    #     func Add(a int, b int) int {
+    #         return a + b
+    #     }
+
+    #     func Sub(a int, b int) int {
+    #         return a - b
+    #     }
+
+    #     func Mul(a int, b int) int {
+    #         return a * b
+    #     }
+
+    #     func Div(a int, b int) int {
+    #         return a / b
+    #     }
+    #     '''
+    #     expect = '200\n0\n10000\n1\nEnd'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 512))
+
 
     # def test_513(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    #     input = \
+    #         '''
+    #         func main() {
+    #             var h Human = Human{name : "Dung", age : 18}
+    #             h.print()
+    #             return
+    #         }
+
+    #         type Human struct {
+    #             name string
+    #             age int
+    #         }
+
+    #         func (h Human) print() {
+    #             putStringLn(h.name)
+    #             putIntLn(h.age)
+                
+    #             return
+    #         }
+    #         '''
+    #     expect = 'Dung\n18\n'
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 513))
 
-    # def test_514(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
 
+    # def test_514(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var father = Animal{name : "A", father : nil}
+    #         var d = Animal{name : "B", father : father}
+
+    #         var theFather = d.getFather()
+
+    #         putStringLn(d.getFather().getName())
+    #         return
+    #     }
+
+    #     type Animal struct {
+    #         name string 
+    #         father Animal
+    #     }
+
+    #     func (a Animal) getName() string {
+    #         return a.name
+    #     }
+
+    #     func (a Animal) getFather() Animal {
+    #         return a.father
+    #     }
+    #     '''
+
+    #     expect = 'A\n'
+        
     #     self.assertTrue(TestCodeGen.test(input, expect, 514))
 
-    # def test_515(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
 
+    # def test_515(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var animal Animal = Dog{}
+    #         var animal1 Animal = Cat{name : "Tom"}
+    #         putStringLn(animal.getType())
+    #         putStringLn(animal1.getType())
+    #         return
+    #     }
+
+    #     func (c Cat) getType() string {
+    #         return "CAT"
+    #     }
+
+    #     type Cat struct {
+    #         name string
+    #     }
+
+    #     type Dog struct {
+    #         name string
+    #     }
+
+    #     func (d Dog) getType() string {
+    #         return "DOG"
+    #     }
+
+    #     type Animal interface {
+    #         getType() string
+    #     }
+    #     '''
+
+    #     expect = 'DOG\nCAT\n'
+        
     #     self.assertTrue(TestCodeGen.test(input, expect, 515))
 
+
     # def test_516(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 100
+    #         a := 2
+    #         b := a + 2
+    #         putIntLn(a + b)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '6\n'
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 516))
 
+
     # def test_517(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    #     input = \
+    #     '''
+    #     var GLOBAL int = 100
+    #     func main() {
+    #         a := 1 + 2
+    #         b := 2 + 3.4
+    #         c := "string" + "string"
+    #         d := true && false
+    #         GLOBAL := 200
+    #         putIntLn(GLOBAL)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '200\n'
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 517))
 
+
     # def test_518(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    #     input = \
+    #     '''
+    #     func main() {
+    #         a := 100
+    #         b := 3.14
+    #         c := a + b
+    #         d := a % 3
+    #         d += 4
+    #         putInt(d)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '5'
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 518))
 
+
     # def test_519(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var w Weapon = Tessaiga{dam : 1000.0, special : 100}
+    #         putFloatLn(w.getDamage())
+    #         putIntLn(w.getSpecial())
+
+    #         w := Tessaiga{dam : 999.9, special : 99}
+    #         putFloatLn(w.getDamage())
+    #         putIntLn(w.getSpecial())
+    #         return
+    #     }
+
+    #     type Tessaiga struct {
+    #         dam float
+    #         special int
+    #     }
+
+    #     func (t Tessaiga) getDamage() float {
+    #         return t.dam
+    #     }
+
+    #     func (t Tessaiga) getSpecial() int {
+    #         return t.special
+    #     }
+
+    #     type Weapon interface {
+    #         getDamage() float
+    #         getSpecial() int
+    #     }
+    #     '''
+
+    #     expect = '1000.0\n100\n999.9\n99\n'
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 519))
 
+
     # def test_520(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+    #     input = \
+    #     '''
+    #     var GLOBAL float;
+    #     func main() {
+    #         var a float = 10;
+    #         putFloat(a)
+    #         a := 20
+    #         putFloat(a)
+
+    #         GLOBAL := 200
+    #         putFloatLn(GLOBAL)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '10.020.0200.0\n'
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 520))
 
-    # def test_521(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 521))
-
-    # def test_522(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 522))
-
-    # def test_523(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 523))
-
-    # def test_524(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 524))
-
-    # def test_525(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 525))
-
-    # def test_526(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 526))
-
-    # def test_527(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 527))
-
-    # def test_528(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 528))
-
-    # def test_529(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 529))
-
-    # def test_530(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 530))
-
-    # def test_531(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 531))
-
-    # def test_532(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 532))
-
-    # def test_533(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 533))
-
-    # def test_534(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 534))
-
-    # def test_535(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 535))
-
-    # def test_536(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 536))
-
-    # def test_537(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 537))
-
-    # def test_538(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 538))
-
-    # def test_539(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 539))
-
-    # def test_540(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 540))
-
-    # def test_541(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 541))
-
-    # def test_542(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 542))
-
-    # def test_543(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 543))
-
-    # def test_544(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 544))
-
-    # def test_545(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 545))
-
-    # def test_546(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 546))
-
-    # def test_547(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 547))
-
-    # def test_548(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 548))
-
-    # def test_549(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 549))
-
-    # def test_550(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 550))
-
-    # def test_551(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 551))
-
-    # def test_552(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 552))
-
-    # def test_553(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 553))
-
-    # def test_554(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 554))
-
-    # def test_555(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 555))
-
-    # def test_556(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 556))
-
-    # def test_557(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 557))
-
-    # def test_558(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 558))
+    def test_521(self):
+        input = \
+        '''
+        func main() {
+            var h = Human {name : "Zun", age : 18}
+            putStringLn(h.name)
+            h.name := "Changed"
+            h.age := 100
+            putStringLn(h.name)
+            putIntLn(h.age)
 
-    # def test_559(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 559))
-
-    # def test_560(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 560))
-
-    # def test_561(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 561))
-
-    # def test_562(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 562))
-
-    # def test_563(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 563))
-
-    # def test_564(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 564))
-
-    # def test_565(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 565))
-
-    # def test_566(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 566))
-
-    # def test_567(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 567))
-
-    # def test_568(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 568))
-
-    # def test_569(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 569))
-
-    # def test_570(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 570))
-
-    # def test_571(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 571))
-
-    # def test_572(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 572))
-
-    # def test_573(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 573))
-
-    # def test_574(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 574))
-
-    # def test_575(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 575))
-
-    # def test_576(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 576))
-
-    # def test_577(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 577))
+            h.name := "Dung" + " " + "Le"
 
-    # def test_578(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 578))
-
-    # def test_579(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 579))
-
-    # def test_580(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 580))
-
-    # def test_581(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 581))
-
-    # def test_582(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 582))
-
-    # def test_583(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 583))
-
-    # def test_584(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 584))
-
-    # def test_585(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 585))
-
-    # def test_586(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 586))
-
-    # def test_587(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+            putStringLn(h.name)
+            return
+        }
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 587))
+        type Human struct {
+            name string
+            age int
+            parents [4]Human
+        }
+        '''
 
-    # def test_588(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 588))
-
-    # def test_589(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 589))
-
-    # def test_590(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 590))
-
-    # def test_591(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 591))
-
-    # def test_592(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 592))
+        expect = 'Zun\nChanged\n100\nDung Le\n'
 
-    # def test_593(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 593))
-
-    # def test_594(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 594))
-
-    # def test_595(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+        self.assertTrue(TestCodeGen.test(input, expect, 521))
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 595))
 
-    # def test_596(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 596))
-
-    # def test_597(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 597))
+    def test_522(self):
+        input = \
+        '''
+        func main() {
+            return
+        }
 
-    # def test_598(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+        func 
+        '''
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 598))
+        expect = ''
 
-    # def test_599(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
-    #     expect = ''
+        self.assertTrue(TestCodeGen.test(input, expect, 522))
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 599))
 
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
 
-    # def test_600(self):
-    #     input = Program(
-    #         [
-    #             FuncDecl(
-    #                 'main',
-    #                 [],
-    #                 VoidType(),
-    #                 Block(
-    #                     [
-                            
-    #                     ]
-    #                 )
-    #             )
-    #         ]
-    #     )
     #     expect = ''
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 600))
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))

@@ -329,8 +329,12 @@ class Emitter():
         elif isinstance(inType, (Class, Interface)):
             return self.jvm.emitASTORE(index)
         
+        elif isinstance(inType, Class):
+            return self.jvm.emitASTORE(index)
+        
         elif type(inType) is ArrayType or type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitASTORE(index)
+        
         else:
             raise IllegalOperandException(name)
 
@@ -448,6 +452,27 @@ class Emitter():
             # return value
             frame.push()
         return self.jvm.emitINVOKEVIRTUAL(lexeme, self.getJVMType(in_))
+    
+
+    def emit_invoke_interface(self, lexeme, in_, frame):
+        #lexeme: String
+        #in_: Type
+        #frame: Frame
+
+        # params of Method same MType
+
+        typ = in_
+        number = 1
+        for param in typ.params:
+            number += 1
+        # pop arguments
+        # pop object
+        list(map(lambda x: frame.pop(), typ.params))
+        frame.pop()
+        if not type(typ.result) is VoidType:
+            # return value
+            frame.push()
+        return self.jvm.emitINVOKEINTERFACE(lexeme, self.getJVMType(in_), number)
 
     '''
     *   generate ineg, fneg.

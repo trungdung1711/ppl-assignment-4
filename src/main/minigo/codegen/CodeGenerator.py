@@ -508,9 +508,11 @@ class ThirdPass(BaseVisitor):
 
         # 2. generate the .implements part
         # NOT for debugging
-        # code.append(
-        #     emitter.emit_class_implements(interfaces)
-        # )
+        code.append(
+            emitter.emit_class_implements(interfaces)
+        )
+
+
 
         # 3. generate the .field part
         # NOTE: all fields are all public
@@ -641,6 +643,13 @@ class Scope:
         flatten = [obj for scope in self.lst for obj in scope]
         reverse_flatten = flatten[::-1]
         return next(filter(lambda obj: obj.name == name, reverse_flatten), None)
+
+
+    def exists(self, name):
+        symbol = self.look_up(name)
+        if symbol is None:
+            return False
+        return True
 
 
 # we must know the type of it
@@ -1205,6 +1214,10 @@ class CodeGenerator(BaseVisitor, Utils):
         frame = Frame(name, result)
 
         type_descriptor = None
+
+        scope.new_scope()
+        frame.enterScope(True)
+
         if name == 'main':
             # for array
             frame.getNewIndex()
@@ -1219,8 +1232,6 @@ class CodeGenerator(BaseVisitor, Utils):
             self.main_emitter.emitMETHOD(name, type_descriptor, True, frame)
         )
 
-        scope.new_scope()
-        frame.enterScope(True)
         # param in
         code.append(
             self.main_emitter.emitLABEL(
@@ -1486,20 +1497,7 @@ class CodeGenerator(BaseVisitor, Utils):
         scope : Scope    = o[2]
 
         code = list()
-        # assume local variable
-        # the Global will be handled differently in .field public static I
-        
-        # if there is expr, then generate code of the 
-        # expression and store to the local variable array
 
-        # if there is no expr, 
-
-        # after that create symbol to add to the scope
-
-        # there is expression
-
-        # type coersion as well
-        # interface and struct as well
         final_type = None
         index = frame.getNewIndex()
 
@@ -1511,14 +1509,15 @@ class CodeGenerator(BaseVisitor, Utils):
             # always generate the type
             # based on the expr, except the case of interface
             # var a float = int_value
+            real_type = self.visitType(typ, o)
             result, result_type = self.visitExpr(expr, o)
             
             code.append(
                 result
             )
 
-            if isinstance(typ, FloatType) and isinstance(result_type, IntType):
-                final_type = typ
+            if isinstance(real_type, FloatType) and isinstance(result_type, IntType):
+                final_type = real_type
                 code.append(
                     emitter.emitI2F(frame)
                 )
@@ -1526,19 +1525,20 @@ class CodeGenerator(BaseVisitor, Utils):
             if not isinstance(typ, Interface):
                 # keep the type of the expression
                 # because it must be the same
-                final_type = result_type
+                final_type = real_type
             
             else:
                 # interface must keep that Interface
-                final_type = typ
+                final_type = real_type
             
             code.append(
-                emitter.emitWRITEVAR(name, result_type, index, frame)
+                emitter.emitWRITEVAR(name, final_type, index, frame)
             )
 
         elif typ and not expr:
             # generate based on the type
-            final_type = typ
+            real_type = self.visitType(typ, o)
+            final_type = real_type
 
         elif expr and not typ:
             # generate based on expression
@@ -1546,6 +1546,7 @@ class CodeGenerator(BaseVisitor, Utils):
 
             result, result_type = self.visitExpr(expr, o)
             final_type = result_type
+
             code.append(
                 result
             )
@@ -1561,19 +1562,6 @@ class CodeGenerator(BaseVisitor, Utils):
         scope.add(symbol)
 
         return ''.join(code)
-    
-        if 'frame' not in o: # global var
-            o['env'][0].append(Symbol(ast.varName, ast.varType, CName(self.className)))
-            self.emit.printout(self.emit.emitATTRIBUTE(ast.varName, ast.varType, True, False, str(ast.varInit.value) if ast.varInit else None))
-        else:
-            frame = o['frame']
-            index = frame.getNewIndex()
-            o['env'][0].append(Symbol(ast.varName, ast.varType, Index(index)))
-            self.emit.printout(self.emit.emitVAR(index, ast.varName, ast.varType, frame.getStartLabel(), frame.getEndLabel(), frame))  
-            if ast.varInit:
-                self.emit.printout(self.emit.emitPUSHICONST(ast.varInit.value, frame))
-                self.emit.printout(self.emit.emitWRITEVAR(ast.varName, ast.varType, index,  frame))
-        return o
 
 
     def visitFuncCall(self, ast, o):
@@ -1622,16 +1610,18 @@ class CodeGenerator(BaseVisitor, Utils):
         # just return the code
         # the parent will link that
         # to the method/function/if/for
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
         if isinstance(ast, FuncCall):
             # just do the same as the expression
             # but don't return the type
             # and we would ignore the value returned back
             # but this is ensured
-            emitter : Emitter = o[0]
-            frame : Frame = o[1]
             code = list()
             static_method = self.findFunction(ast.funName)
+
             result, typ = self.visitExpr(ast, o)
+
             code.append(result)
             if not isinstance(static_method.result, VoidType):
                 code.append(
@@ -1640,7 +1630,21 @@ class CodeGenerator(BaseVisitor, Utils):
             return ''.join(code)
 
         elif isinstance(ast, MethCall):
-            pass
+            # same as expression
+            # no need to get the result type -> skip
+            # in the case of expression, we have to get
+            # the result type
+            code = list()
+
+            result, typ = self.visitExpr(ast, o)
+            code.append(result)
+
+            if not isinstance(typ, VoidType):
+                code.append(
+                    emitter.emitPOP(frame)
+                )
+
+            return ''.join(code)
 
         else:
             return self.visit(ast, o)
@@ -1694,7 +1698,8 @@ class CodeGenerator(BaseVisitor, Utils):
 
             
             return ''.join(code), symbol.mtype
-        
+
+
         elif isinstance(ast, FieldAccess):
             # get field
             expr = ast.receiver
@@ -1707,12 +1712,12 @@ class CodeGenerator(BaseVisitor, Utils):
                 result
             )
 
+            field = self.findField(result_type.name, name)
+
             # then getfield
             code.append(
-                emitter.emitGETFIELD('/'.join([result_type.name, name]), result_type, frame)
+                emitter.emitGETFIELD('/'.join([result_type.name, name]), field.mtype, frame)
             )
-
-            field = self.findField(result_type.name, name)
 
             return ''.join(code), field.mtype
         
@@ -1725,11 +1730,54 @@ class CodeGenerator(BaseVisitor, Utils):
             code = list()
             for arg in arguments:
                 result, typ = self.visitExpr(arg, o)
+                # if isinstance(typ, IntType) and isinstance()
                 code.append(result)
             
             code.append(emitter.emitINVOKESTATIC(static_method.invoke(), static_method, frame))
 
-            return ''.join(code), static_method.result
+            return ''.join(code), self.visitType(static_method.result, o)
+
+
+        elif isinstance(ast, MethCall):
+            # debug
+            # print('check')
+            code = list()
+
+            expr = ast.receiver
+            name = ast.metName
+            arguments = ast.args
+            interface_count = 1
+
+
+            result, typ = self.visitExpr(expr, o)
+
+            code.append(result)
+
+            for arg in arguments:
+                interface_count += 1
+                result_arg, typ_arg = self.visitExpr(arg, o)
+                code.append(result_arg)
+
+            if isinstance(typ, Class):
+                # print(typ.name)
+                # print(name)
+                method = self.findMethod(typ.name, name)
+                # print(method.result.name)
+                code.append(
+                    emitter.emitINVOKEVIRTUAL(method.invoke(), method, frame)
+                )
+
+
+                return ''.join(code), self.visitType(method.result, o)
+
+            elif isinstance(typ, Interface):
+                method = self.findMethodI(typ.name, name)
+
+                code.append(
+                    emitter.emit_invoke_interface(method.invoke(), method, frame)
+                )
+                return ''.join(code), self.visitType(method.result, o)
+
         
         else:
             return self.visit(ast, o)
@@ -1813,7 +1861,9 @@ class CodeGenerator(BaseVisitor, Utils):
     def visitNilLiteral(self, ast, o):
         emitter : Emitter = o[0]
         frame   : Frame   = o[1]
-        return emitter.emitNULL(frame)
+        # no type assignment for value
+        # var a = nil
+        return emitter.emitNULL(frame), Class('MiniGoClass')
 
 
     # normal expr
@@ -1862,13 +1912,22 @@ class CodeGenerator(BaseVisitor, Utils):
             code.append(
                 emitter.emitDUP(frame)
             )
+
             result, result_type = self.visitExpr(expr, o)
+
             code.append(
                 result
             )
 
+            field_obj = self.findField(name, field)
+
+            if isinstance(field_obj.mtype, FloatType) and isinstance(result_type, IntType):
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
             code.append(
-                emitter.emitPUTFIELD('/'.join([name, field]), result_type, frame)
+                emitter.emitPUTFIELD('/'.join([name, field]), field_obj.mtype, frame)
             )
 
         return ''.join(code), Class(name)
@@ -2168,9 +2227,6 @@ class CodeGenerator(BaseVisitor, Utils):
             return ''.join(code), BOOLTYPE
 
 
-    # normal expr
-    # type checking is done right now
-    # no worry about that
     def visitUnaryOp(self, ast, o):
         op      = ast.op
         expr    = ast.body
@@ -2260,6 +2316,10 @@ class CodeGenerator(BaseVisitor, Utils):
             else:
                 # interface
                 return Interface(name)
+            
+
+        elif isinstance(ast, (Class, Interface)):
+            return ast
 
         else:
             return self.visit(ast, o)
@@ -2301,9 +2361,87 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitAssign(self, ast, o):
+        emitter : Emitter = o[0]
+        frame   : Frame  = o[1]
+        scope   : Scope = o[2]
+
+
         lhs = ast.lhs
         rhs = ast.rhs
-        
+
+        if isinstance(lhs, Id):
+            if not scope.exists(lhs.name):
+                # Declaration
+                varDecl = VarDecl(lhs.name, None, rhs)
+                result = self.visiStmt(varDecl, o)
+
+                return ''.join(result)
+
+
+            else:
+                # there exists
+                # then just reassign
+                symbol : Symbol = scope.look_up(lhs.name)
+                result, result_type = self.visitExpr(rhs, o)
+                code = list()
+
+                code.append(
+                    result
+                )
+
+                if isinstance(result_type, IntType) and isinstance(symbol.mtype, FloatType):
+                    
+                    code.append(
+                        emitter.emitI2F(frame)
+                    )
+
+                if symbol.is_static:
+                    code.append(
+                        emitter.emitPUTSTATIC(symbol.getStaticName(), symbol.mtype, frame)
+                    )
+
+                else:
+                    code.append(
+                        emitter.emitWRITEVAR(lhs.name, symbol.mtype, symbol.index, frame)
+                    )
+                
+                return ''.join(code)
+
+
+        elif isinstance(lhs, FieldAccess):
+            code = list()
+
+            expr = lhs.receiver
+            name = lhs.field
+
+            rec, rec_type = self.visitExpr(expr, o)
+            code.append(
+                rec
+            )
+
+            value, value_type = self.visitExpr(rhs, o)
+            code.append(
+                value
+            )
+
+            field : Symbol = self.findField(rec_type.name, name)
+
+            if isinstance(field.mtype, FloatType) and isinstance(value_type, IntType):
+                code.append(
+                    emitter.emitI2F(frame)
+                )
+
+            code.append(
+                emitter.emitPUTFIELD('/'.join([rec_type.name, field.name]), field.mtype, frame)
+            )
+
+            return ''.join(code)
+
+
+        elif isinstance(lhs, ArrayCell):
+            pass
+
+
         # check if the right-hand side is declared
         # declared -> get that value and modified
         # not declared -> declared that with the value of expr
