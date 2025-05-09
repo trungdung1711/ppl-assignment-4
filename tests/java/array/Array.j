@@ -25,11 +25,11 @@
   .limit stack 7
   .limit locals 2
   .line 6
-  0: iconst_2
+  0: iconst_4
   1: anewarray [I
   4: dup
   5: iconst_0
-  6: iconst_2
+  6: iconst_3
   7: newarray int
   9: dup
   10: iconst_0
@@ -39,29 +39,64 @@
   14: iconst_1
   15: iconst_2
   16: iastore
-  17: aastore
-  18: dup
-  19: iconst_1
-  20: iconst_2
-  21: newarray int
-  23: dup
-  24: iconst_0
-  25: iconst_3
-  26: iastore
+  17: dup
+  18: iconst_2
+  19: iconst_3
+  20: iastore
+  21: aastore
+  22: dup
+  23: iconst_1
+  24: iconst_3
+  25: newarray int
   27: dup
-  28: iconst_1
+  28: iconst_0
   29: iconst_4
   30: iastore
-  31: aastore
-  32: astore_1
-  .line 8
-  33: aload_1
-  34: iconst_1
-  35: aaload
+  31: dup
+  32: iconst_1
+  33: iconst_5
+  34: iastore
+  35: dup
   36: iconst_2
-  37: iconst_4
-  38: iastore
-  .line 9
-  39: return
+  37: bipush 6
+  39: iastore
+  40: aastore
+  41: dup
+  42: iconst_2
+  43: iconst_3
+  44: newarray int
+  46: dup
+  47: iconst_0
+  48: bipush 7
+  50: iastore
+  51: dup
+  52: iconst_1
+  53: bipush 8
+  55: iastore
+  56: dup
+  57: iconst_2
+  58: bipush 9
+  60: iastore
+  61: aastore
+  62: dup
+  63: iconst_3
+  64: iconst_3
+  65: newarray int
+  67: dup
+  68: iconst_0
+  69: bipush 10
+  71: iastore
+  72: dup
+  73: iconst_1
+  74: bipush 11
+  76: iastore
+  77: dup
+  78: iconst_2
+  79: bipush 12
+  81: iastore
+  82: aastore
+  83: astore_1
+  .line 12
+  84: return
 .end method
 

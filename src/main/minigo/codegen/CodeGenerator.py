@@ -1849,12 +1849,105 @@ class CodeGenerator(BaseVisitor, Utils):
     # and because the value to be corrected, then no need
     # to worry about that
     def visitArrayLiteral(self, ast, o):
-        # the value is just primitive
-        # int, float, boolean, String
-        # not the object
+        emitter: Emitter = o[0]
+        frame: Frame = o[1]
+        scope: Scope = o[2]
 
-        # so, there is no array of referece?
-        pass
+        value = ast.value      # Nested list
+        ele_type = ast.eleType # Base type (int, float, etc.)
+
+        return self.generateArray(value, ele_type, o), ArrayType(ast.dimens, ele_type)
+
+
+    def generateArray(self, value, ele_type, o):
+        emitter: Emitter = o[0]
+        frame: Frame = o[1]
+        scope: Scope = o[2]
+
+        code = list()
+
+        dim = self.getDimension(value)
+        # 1 -> [v]
+        # 2 -> [v, v]
+
+        if dim == 1 and not isinstance(value[0], list):
+            # This is a flat array of primitives: int[], float[], ...
+            # array of primitive or ref
+            code.append(
+                emitter.emitPUSHICONST(len(value), frame)
+            )
+            code.append(
+                emitter.emitNEWARRAY(ele_type, frame)
+            )  # e.g., "int", "float", "string"
+
+            for i, val in enumerate(value):
+                code.append(
+                    emitter.emitDUP(frame)
+                )
+
+                code.append(
+                    emitter.emitPUSHICONST(i, frame)
+                )
+
+                result, result_type = self.visitExpr(val, o)
+
+                code.append(
+                    result
+                )
+
+                code.append(
+                    emitter.emit_store_value_to_array(ele_type, frame)
+                )
+
+        else:
+            # This is an array of arrays — emit anewarray
+            # this is an array of objects, create that value
+            # dim = 2 -> [v]
+            code.append(
+                emitter.emitPUSHICONST(len(value), frame)
+            )
+
+            # create type of inside
+            dimension = [True for i in range(dim - 1)]
+
+            # make the inner side
+            # [][] array of []
+            new_type = ArrayType(dimension, ele_type)
+
+            code.append(
+                emitter.emitANEWARRAY(new_type, frame)
+            )  # e.g., "[I", "[[F"
+
+            # for each of the [[], [], []], a big array
+            for i, sub in enumerate(value):
+                # assign new array created when created
+                code.append(
+                    emitter.emitDUP(frame)
+                )
+                # index
+                code.append(
+                    emitter.emitPUSHICONST(i, frame)
+                )
+                # generate that array to get the ref
+                sub_code = self.generateArray(sub, ele_type, o)
+                code.extend(sub_code)
+                # put to that value
+                code.append(
+                    emitter.emit_store_value_to_array(new_type, frame)
+                )
+
+        return ''.join(code)
+
+
+    def getDimension(self, value):
+        if not isinstance(value, list):
+            return 0
+
+        elif len(value) == 0:
+            return 1
+
+        else:
+            return 1 + self.getDimension(value[0])
 
 
     # normal expr

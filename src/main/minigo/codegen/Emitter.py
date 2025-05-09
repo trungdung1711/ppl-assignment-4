@@ -200,6 +200,14 @@ class Emitter():
         elif type(typ) is StringType:
             frame.push()
             return self.jvm.emitLDC(in_)
+        
+        elif isinstance(typ, FloatType):
+            frame.push()
+            return self.jvm.emitFCONST(in_)
+        
+        elif isinstance(typ, BoolType):
+            # frame.push()
+            return self.emitPUSHICONST(in_, frame)
 
         else:
             raise IllegalOperandException(in_)
@@ -989,3 +997,53 @@ class Emitter():
     def emitNULL(self, frame):
         frame.push()
         return self.jvm.INDENT + 'aconst_null' + self.jvm.END
+    
+
+    def emitNEWARRAY(self, typ, frame):
+        # size -> ref
+        frame.pop()
+        frame.push()
+
+        if isinstance(typ, IntType):
+            return self.jvm.emitNEWARRAY('int')
+
+        elif isinstance(typ, FloatType):
+            return self.jvm.emitNEWARRAY('float')
+
+        elif isinstance(typ, BoolType):
+            return self.jvm.emitNEWARRAY('int')
+
+        elif isinstance(typ, StringType):
+            return self.jvm.emitANEWARRAY('java/lang/String')
+
+        else:
+            return self.jvm.emitANEWARRAY(typ.name)
+
+
+    def emitANEWARRAY(self, typ, frame):
+        # size ->array of ref
+        frame.pop()
+        frame.push()
+        jvm_type = self.getJVMType(typ)
+        return self.jvm.emitANEWARRAY(jvm_type)
+
+
+    def emit_store_value_to_array(self, typ, frame):
+        # ref, index, value
+        frame.pop()
+        frame.pop()
+        frame.pop()
+        if isinstance(typ, IntType):
+            return self.jvm.emitIASTORE()
+
+        elif isinstance(typ, FloatType):
+            return self.jvm.emitFASTORE()
+
+        elif isinstance(typ, BoolType):
+            return self.jvm.emitIASTORE()
+
+        elif isinstance(typ, StringType):
+            return self.jvm.emitAASTORE()
+
+        else:
+            return self.jvm.emitAASTORE()

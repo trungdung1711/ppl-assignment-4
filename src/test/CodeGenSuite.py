@@ -518,13 +518,109 @@ class CheckCodeGenSuite(unittest.TestCase):
         func main() {
             return
         }
-
-        func 
         '''
 
         expect = ''
 
         self.assertTrue(TestCodeGen.test(input, expect, 522))
+
+
+    def test_523(self):
+        input = \
+        '''
+        func main() {
+            // var arr [3]int = [3]int{1, 2, 3}
+            // var arr [4]float = [4]float{3.4, 3.2, 3.4, 5.6}
+            // var arr [3]boolean = [3]boolean{true, false, true, false}
+            // var arr [2]string = [2]string{"This", "is"}
+            // var arr [5]int = [5]int{1, 2, 3, 4, 5}
+
+            var arr [2][2][2]float = [2][2][2]float {{{1.6, 2.1}, {3.3, 4.4}}, {{5.6, 6.7}, {7.4, 8.3}}}
+            return
+        }
+        '''
+
+        expect = ''
+
+        self.assertTrue(TestCodeGen.test(input, expect, 523))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
 
 
     # def test_516(self):
