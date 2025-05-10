@@ -1171,6 +1171,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 self.main_emitter.emitATTRIBUTE(name, const_type, True, True, None)
             )
 
+
         else:
             # normal logic
             self.visit(ast, o)
@@ -1783,7 +1784,7 @@ class CodeGenerator(BaseVisitor, Utils):
             # getting the type from the expression
 
             result, result_type = self.visitExpr(expr, o)
-            final_type = result_type
+            final_type = self.visitType(result_type, o)
 
             code.append(
                 result
@@ -2270,7 +2271,8 @@ class CodeGenerator(BaseVisitor, Utils):
                     emitter.emitADDOP('+', FLOATTYPE, frame)
                 )
                 return ''.join(code), FLOATTYPE
-            
+
+
         elif op == CodeGenerator.Operator.SUB.value:
             # -
             if identical(type_x, INTTYPE) and identical(type_y, INTTYPE):
@@ -2337,7 +2339,8 @@ class CodeGenerator(BaseVisitor, Utils):
                     emitter.emitADDOP('-', FLOATTYPE, frame)
                 )
                 return ''.join(code), FLOATTYPE
-            
+
+
         elif op == CodeGenerator.Operator.MUL.value or \
             op == CodeGenerator.Operator.DIV.value:
             # *, /
@@ -2355,7 +2358,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 )
                 return ''.join(code), INTTYPE
 
-            elif identical(type_x, FLOATTYPE) and identical(type_x, FLOATTYPE):
+            elif identical(type_x, FLOATTYPE) and identical(type_y, FLOATTYPE):
                 # add normal and generate the fadd
                 code.append(
                     result_x
@@ -2370,7 +2373,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 )
                 return ''.join(code), FLOATTYPE
             
-            elif identical(type_x, FLOATTYPE):
+            elif identical(type_x, FLOATTYPE) and identical(type_y, INTTYPE):
                 code.append(
                     result_x
                 )
@@ -2388,7 +2391,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 )
                 return ''.join(code), FLOATTYPE
 
-            elif identical(type_y, FLOATTYPE):
+            elif identical(type_y, FLOATTYPE) and identical(type_x, INTTYPE):
                 code.append(
                     result_x
                 )
@@ -2406,6 +2409,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 )
                 return ''.join(code), FLOATTYPE
         
+
         elif op == CodeGenerator.Operator.MOD.value:
             code.append(
                 result_x
@@ -2421,6 +2425,7 @@ class CodeGenerator(BaseVisitor, Utils):
 
             return ''.join(code), INTTYPE
         
+
         elif op == CodeGenerator.Operator.EQ.value or \
             op == CodeGenerator.Operator.NEQ.value or \
             op == CodeGenerator.Operator.GT.value or \
@@ -2455,6 +2460,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 )
 
             return ''.join(code), BOOLTYPE
+
 
         elif op == CodeGenerator.Operator.AND.value or \
             op == CodeGenerator.Operator.OR.value:
@@ -2733,133 +2739,55 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitIf(self, ast, o):
-        cond_ = ast.expr
-        then_ = ast.thenStmt
-        else_ = ast.elseStmt
+        cond = ast.expr
+        then_stmt = ast.thenStmt
+        else_stmt = ast.elseStmt
 
-        emitter : Emitter = o[0]
-        frame : Frame = o[1]
-        scope : Scope = o[2]
+        emitter: Emitter = o[0]
+        frame: Frame = o[1]
+        scope: Scope = o[2]
 
-        code = list()
+        code = []
 
+        cond_code, cond_type = self.visitExpr(cond, o)
+        # if not isinstance(cond_type, BoolType):
+        #     raise TypeMismatchInStatement(ast)
+
+        else_label = frame.getNewLabel() if else_stmt else None
         end_label = frame.getNewLabel()
 
-        if not else_:
-            cond_code, cond_type = self.visitExpr(cond_, o)
-            
-            code.append(
-                cond_code
-            )
+        # Emit condition check
+        code.append(cond_code)
+        code.append(emitter.emitIFFALSE(else_label if else_stmt else end_label, frame))
 
-            code.append(
-                emitter.emitIFFALSE(end_label, frame)
-            )
+        # --- THEN block ---
+        frame.enterScope(False)
+        scope.new_scope()
+        code.append(self.visit(then_stmt, o))
+        scope.out_scope()
+        frame.exitScope()
 
-            # back
-            frame.enterScope(False)
-            # new scope
-            code.append(
-                emitter.emitLABEL(frame.getStartLabel(), frame)
-            )
-            scope.new_scope()
+        if else_stmt:
+            # Jump to end of if-else after then block
+            code.append(emitter.emitGOTO(end_label, frame))
 
-            # code inside
-            code.append(
-                self.visit(then_, o)
-            )
+            # --- ELSE block ---
+            code.append(emitter.emitLABEL(else_label, frame))
 
-            code.append(
-                emitter.emitGOTO(end_label, frame)
-            )
-
-            scope.out_scope()
-            code.append(
-                emitter.emitLABEL(frame.getEndLabel(), frame)
-            )
-
-            frame.exitScope()
-
-            code.append(
-                emitter.emitLABEL(end_label, frame)
-            )
-
-            return ''.join(code)
-
-        else:
-            # there is still else_
-            else_label = frame.getNewLabel()
-            cond_code, cond_type = self.visitExpr(cond_, o)
-            
-            code.append(
-                cond_code
-            )
-
-            code.append(
-                emitter.emitIFFALSE(else_label, frame)
-            )
-
-            # back
-            frame.enterScope(False)
-            # new scope
-            code.append(
-                emitter.emitLABEL(frame.getStartLabel(), frame)
-            )
-            scope.new_scope()
-
-            # code inside
-            code.append(
-                self.visit(then_, o)
-            )
-
-            code.append(
-                emitter.emitGOTO(end_label, frame)
-            )
-
-            scope.out_scope()
-            code.append(
-                emitter.emitLABEL(frame.getEndLabel(), frame)
-            )
-            frame.exitScope()
-
-
-            code.append(
-                emitter.emitLABEL(else_label, frame)
-            )
-
-
-            if isinstance(else_, If):
-                # if it is another If
-                # then just add this code to the main
-                code.append(
-                    self.visit(else_, o)
-                )
-
+            if isinstance(else_stmt, If):
+                # else if
+                code.append(self.visit(else_stmt, o))
             else:
-                # Block
-                # for the else part, if it is just a block
                 frame.enterScope(False)
                 scope.new_scope()
-                code.append(
-                    emitter.emitLABEL(frame.getStartLabel(), frame)
-                )
-
-                # visit the block
-                code.append(
-                    self.visit(else_, o)
-                )
-
-                code.append(
-                    emitter.emitLABEL(frame.getEndLabel(), frame)
-                )
+                code.append(self.visit(else_stmt, o))
                 scope.out_scope()
                 frame.exitScope()
-            
-            code.append(
-                emitter.emitLABEL(end_label, frame)
-            )
 
-            return ''.join(code)
+        # Common end label
+        code.append(emitter.emitLABEL(end_label, frame))
+
+        return ''.join(code)
 
 
     def visitForBasic(self, ast, o):
@@ -2912,7 +2840,68 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitForStep(self, ast, o):
-        return None
+        init = ast.init
+        cond = ast.cond
+        update = ast.upda
+        body = ast.loop
+
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        scope : Scope = o[2]
+
+        code = list()
+
+        scope.new_scope()
+        frame.enterScope(False)
+
+        # assign, use the value before, or create a new one
+        code.append(
+            self.visiStmt(init, o)
+        )
+
+        label1 = frame.getNewLabel()
+
+        code.append(
+            emitter.emitLABEL(label1, frame)
+        )
+
+        frame.enterLoop()
+
+        cond_code, _ = self.visitExpr(cond, o)
+
+        code.append(cond_code)
+
+        code.append(
+            emitter.emitIFFALSE(frame.getBreakLabel(), frame)
+        )
+
+        code.append(
+            self.visit(body, o)
+        )
+
+        code.append(
+            emitter.emitLABEL(frame.getContinueLabel(), frame)
+        )
+
+        code.append(
+            self.visiStmt(update, o)
+        )
+
+        code.append(
+            emitter.emitGOTO(label1, frame)
+        )
+
+        code.append(
+            emitter.emitLABEL(frame.getBreakLabel(), frame)
+        )
+
+        frame.exitLoop()
+
+        frame.exitScope()
+
+        scope.out_scope()
+
+        return ''.join(code)
 
 
     def visitForEach(self, ast, o):

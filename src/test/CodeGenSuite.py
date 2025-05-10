@@ -1358,116 +1358,420 @@ class CheckCodeGenSuite(unittest.TestCase):
     #     self.assertTrue(TestCodeGen.test(input, expect, 548))
 
 
-    def test_549(self):
+    # def test_549(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         i := 0
+    #         for (i < 10) {
+    #             i += 1
+    #             if (i % 2 == 0) {
+    #                 continue
+    #             }
+    #             putInt(i)
+    #             putString(" ")
+    #         }
+    #     }
+    #     '''
+
+    #     expect = "1 3 5 7 9 "
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 549))
+
+
+    # def test_550(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         i := 1
+    #         sum := 0
+    #         for (i <= 10) {
+    #             if (i > 5) {
+    #                 break
+    #             }
+    #             sum += i
+    #             i += 1
+    #         }
+    #         putString("Sum till 5: ")
+    #         putInt(sum)
+    #     }
+    #     '''
+
+    #     expect = "Sum till 5: 15"
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 550))
+
+
+    # def test_551(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         Print(50)
+    #     }
+
+    #     func Print(value int) {
+    #         i := 0
+    #         for (i < value) {
+    #             i += 1
+    #             if ( i % 2 == 0) {
+    #                 continue
+    #             } else if (i == 9) {
+    #                 putString("Invalid")
+    #             } else if ( i == 20) {
+    #                 break
+    #             } else {
+    #                 putInt(i)
+    #             }
+    #         }
+    #     }
+    #     '''
+
+    #     expect = '1357Invalid1113151719212325272931333537394143454749'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 551))
+
+
+    # def test_551(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         for i := 0 ; i < 10 ; i += 1 {
+    #             putInt(i)
+    #         }
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '0123456789'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 551))
+
+
+    # def test_552(self):
+    #     input = \
+    #     '''
+    #     const LEN = 10
+    #     func main() {
+    #         arr := [LEN]int {9, 2, 3, 4, 5, 6, 100, 8, 9, 777}
+    #         putInt(Max(arr, LEN))
+    #         return
+    #     }
+
+    #     func Max(arr [10]int, len int) int {
+    #         var i int = 0
+    #         max := arr[0]
+    #         for i := 0 ; i < LEN ; i += 1 {
+    #             if (arr[i] >= max) {
+    #                 max := arr[i]
+    #             }
+    #         }
+    #         return max
+    #     }
+    #     '''
+
+    #     expect = '777'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 552))
+
+
+    # def test_553(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         for i := 9 ; i >= 0 ; i -= 1 {
+    #             if (i == 5) {
+    #                 break
+    #             }
+    #             putInt(i)
+    #         }
+    #     }
+    #     '''
+    #     # Expect output: 9876 (stops before printing 5)
+    #     expect = '9876'
+    #     self.assertTrue(TestCodeGen.test(input, expect, 553))
+
+
+
+    # def test_554(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         sum := 0
+    #         for i := 0 ; i < 10 ; i += 1 {
+    #             if (i % 3 != 0) {
+    #                 continue
+    #             }
+    #             sum += i
+    #         }
+    #         putInt(sum)
+    #     }
+    #     '''
+    #     # 0 + 3 + 6 + 9 = 18
+    #     expect = '18'
+    #     self.assertTrue(TestCodeGen.test(input, expect, 554))
+
+
+    # def test_555(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 0
+    #         var b int = 1
+    #         putInt(a)
+    #         putString(" ")
+    #         putInt(b)
+    #         putString(" ")
+
+    #         for i := 2 ; i < 7 ; i += 1 {
+    #             c := a + b
+    #             putInt(c)
+    #             putString(" ")
+    #             a := b
+    #             b := c
+    #         }
+    #     }
+    #     '''
+    #     # Fibonacci sequence: 0 1 1 2 3 5 8
+    #     expect = '0 1 1 2 3 5 8 '
+    #     self.assertTrue(TestCodeGen.test(input, expect, 555))
+
+
+    # def test_556(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         // Test array of structs with interface and method calls
+    #         var vehicles [3]Vehicle = [3]Vehicle{Car{speed: 120, model: "Sedan"}, Bike{speed: 30, brand: "Mountain"}, Truck{speed: 80, capacity: 5000}}
+
+    #         // Print all vehicle info
+    #         i := 0
+    #         for (i < 3) {
+    #             putStringLn(vehicles[i].getInfo())
+    #             i += 1
+    #         }
+
+    #         // Find fastest vehicle
+    #         fastest := vehicles[0]
+    #         j := 1
+    #         for (j < 3) {
+    #             if (vehicles[j].getSpeed() > fastest.getSpeed()) {
+    #                 fastest := vehicles[j]
+    #             }
+    #             j += 1
+    #         }
+    #         putString("Fastest: ")
+    #         putStringLn(fastest.getModel())
+    #         return
+    #     }
+
+    #     type Car struct {
+    #         speed int
+    #         model string
+    #     }
+
+    #     type Bike struct {
+    #         speed int
+    #         brand string
+    #     }
+
+    #     type Truck struct {
+    #         speed int
+    #         capacity int
+    #     }
+
+    #     func (c Car) getInfo() string {
+    #         return "Car: " + c.model + ", speed: " + "1"
+    #     }
+
+    #     func (b Bike) getInfo() string {
+    #         return "Bike: " + b.brand + ", speed: " + "1"
+    #     }
+
+    #     func (t Truck) getInfo() string {
+    #         return "Truck: capacity " + "1" + ", speed: " + "1"
+    #     }
+
+    #     func (c Car) getSpeed() int {
+    #         return c.speed
+    #     }
+
+    #     func (b Bike) getSpeed() int {
+    #         return b.speed
+    #     }
+
+    #     func (t Truck) getSpeed() int {
+    #         return t.speed
+    #     }
+
+    #     func (c Car) getModel() string {
+    #         return c.model
+    #     }
+
+    #     func (b Bike) getModel() string {
+    #         return b.brand
+    #     }
+
+    #     func (t Truck) getModel() string {
+    #         return "Truck"
+    #     }
+
+    #     type Vehicle interface {
+    #         getInfo() string
+    #         getSpeed() int
+    #         getModel() string
+    #     }
+    #     '''
+
+    #     expect = '''Car: Sedan, speed: 1\nBike: Mountain, speed: 1\nTruck: capacity 1, speed: 1\nFastest: Sedan\n'''
+    #     self.assertTrue(TestCodeGen.test(input, expect, 556))
+
+
+    # def test_557(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         putInt(Fibonancci(19))
+    #     }
+
+    #     func Fibonancci(a int) int {
+    #         if (a == 0) {
+    #             return 0
+    #         } else if (a == 1) {
+    #             return 1
+    #         } else {
+    #             return Fibonancci(a - 1) + Fibonancci(a - 2)
+    #         }
+    #     }
+    #     '''
+
+    #     expect = '4181'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 557))
+
+
+    def test_557(self):
         input = \
         '''
         func main() {
-            i := 0
-            for (i < 10) {
-                i += 1
-                if (i % 2 == 0) {
-                    continue
-                }
-                putInt(i)
-                putString(" ")
+            var x boolean = true
+            var y boolean = false
+            var result boolean = (x && !y) || (!x && y)
+            if (result) {
+                putStringLn("Complex logic passed")
             }
+            return
         }
         '''
-
-        expect = "1 3 5 7 9 "
-
-        self.assertTrue(TestCodeGen.test(input, expect, 549))
+        expect = 'Complex logic passed\n'
+        self.assertTrue(TestCodeGen.test(input, expect, 557))
 
 
-    def test_550(self):
+    def test_558(self):
         input = \
         '''
+        var globalInt int = 10
+        var globalStr string = "MiniGo"
+        const PI = 3.14
+        const AUTHOR = "CompilerBot"
+
+        func getGlobalInt() int {
+            return globalInt
+        }
+
+        func getPI() float {
+            return PI
+        }
+
         func main() {
-            i := 1
-            sum := 0
-            for (i <= 10) {
-                if (i > 5) {
-                    break
-                }
-                sum += i
-                i += 1
-            }
-            putString("Sum till 5: ")
-            putInt(sum)
+            putIntLn(globalInt)
+            putStringLn(globalStr)
+            putFloatLn(PI)
+            putStringLn(AUTHOR)
+
+            globalInt := getGlobalInt() + 5
+            putIntLn(globalInt)
+
+            result := getPI() * 2
+            putFloatLn(result)
+
+            return
         }
         '''
-
-        expect = "Sum till 5: 15"
-
-        self.assertTrue(TestCodeGen.test(input, expect, 550))
+        expect = '10\nMiniGo\n3.14\nCompilerBot\n15\n6.28\n'
+        self.assertTrue(TestCodeGen.test(input, expect, 558))
 
 
-    def test_551(self):
+    def test_559(self):
         input = \
         '''
-        func main() {
-            Print(50)
+        type Student struct {
+            name string
+            age int
+            gpa float
         }
 
-        func Print(value int) {
-            i := 0
-            for (i < value) {
-                i += 1
-                if ( i % 2 == 0) {
-                    continue
-                } else if (i == 9) {
-                    putString("Invalid")
-                } else if ( i == 20) {
-                    break
-                } else {
-                    putInt(i)
-                }
-            }
+        var defaultStudent = Student{name: "Alice", age: 20, gpa: 3.5}
+
+        func main() {
+            putStringLn(defaultStudent.name)
+            putIntLn(defaultStudent.age)
+            putFloatLn(defaultStudent.gpa)
+
+            defaultStudent := UpdateStudent(defaultStudent)
+            putStringLn(defaultStudent.name)
+            putIntLn(defaultStudent.age)
+            putFloatLn(defaultStudent.gpa)
+
+            return
+        }
+
+        func UpdateStudent(s Student) Student {
+            s.name := "Bob"
+            s.age := s.age + 1
+            s.gpa := 3.9
+            return s
         }
         '''
-
-        expect = '1357Invalid1113151719212325272931333537394143454749'
-
-        self.assertTrue(TestCodeGen.test(input, expect, 551))
+        expect = 'Alice\n20\n3.5\nBob\n21\n3.9\n'
+        self.assertTrue(TestCodeGen.test(input, expect, 559))
 
 
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
+    def test_560(self):
+        input = \
+        '''
+        type Speaker interface {
+            speak() string
+        }
 
-    #     expect = ''
+        type Person struct {
+            name string
+        }
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+        type Robot struct {
+            model string
+        }
 
+        var p = Person{name: "John"}
+        var r = Robot{model: "R2D2"}
 
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
+        func main() {
+            putStringLn(p.speak())  // John says hello
+            putStringLn(r.speak())  // R2D2 says beep boop
 
-    #     expect = ''
+            return
+        }
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+        func (p Person) speak() string {
+            return p.name + " says hello"
+        }
 
+        func (r Robot) speak() string {
+            return r.model + " says beep boop"
+        }
+        '''
+        expect = 'John says hello\nR2D2 says beep boop\n'
+        self.assertTrue(TestCodeGen.test(input, expect, 560))
 
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
-
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
 
 
     # def test_516(self):
@@ -1497,6 +1801,32 @@ class CheckCodeGenSuite(unittest.TestCase):
 
 
     # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+        # def test_516(self):
     #     input = \
     #     '''
     #     func main() {
