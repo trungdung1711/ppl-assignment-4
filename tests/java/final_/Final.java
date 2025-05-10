@@ -1,10 +1,8 @@
 package final_;
 
 public class Final {
-    public int name = 18;
-
-
-    public Final() {
-        name = 100;
+    public void run() {
+        final int value = 5;
+        int result = value;
     }
 }

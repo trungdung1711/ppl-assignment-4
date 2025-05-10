@@ -1047,3 +1047,49 @@ class Emitter():
 
         else:
             return self.jvm.emitAASTORE()
+        
+
+    def emit_load_value_from_array(self, typ, frame):
+        # ref, index, value
+        frame.pop()
+        frame.pop()
+        frame.push()
+        if isinstance(typ, IntType):
+            return self.jvm.emitIALOAD()
+
+        elif isinstance(typ, FloatType):
+            return self.jvm.emitFALOAD()
+
+        elif isinstance(typ, BoolType):
+            return self.jvm.emitIALOAD()
+
+        elif isinstance(typ, StringType):
+            return self.jvm.emitAALOAD()
+
+        else:
+            return self.jvm.emitAALOAD()
+        
+
+    def emit_multi_array(self, typ, index, frame):
+        [frame.pop() for i in index]
+        frame.push()
+        jvm_type = self.getJVMType(typ)
+        return self.jvm.emitMULTIANEWARRAY(jvm_type, len(typ.dimens))
+    
+
+    def emit_bool_cal_true(self, frame):
+
+        code = list()
+        code.append(
+            self.emitPOP(frame)
+        )
+
+        code.append(
+            self.emitPOP(frame)
+        )
+
+        code.append(
+            self.emitPUSHCONST('true', BoolType(), frame)
+        )
+
+        return ''.join(code)

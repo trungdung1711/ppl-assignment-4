@@ -762,14 +762,6 @@ class FourthPass(BaseVisitor):
 # Thus our task must make a function/method
 # to be executed at that time
 ####################################################
-
-# Mức 1: Sinh mã với các biến chỉ ở các kiểu cơ bản như int,
-#  float, boolean và string và thực hiện sinh mã cho 
-# các biểu thức và các phát biểu 
-# (khai báo và gán phải làm đầu tiên). 
-# Khác với init code, các em nên tạo một thành phần của môi trường là 
-# "emitter" để cất đối tượng Emitter (mỗi emitter sẽ tạo một file j, do sẽ có nhiều file j nên sẽ có nhiều emitter) 
-# tương tự như thành phần "frame" để cất đối tượng Frame để sinh mã cho mỗi phương thức.
 class CodeGenerator(BaseVisitor, Utils):
 
 
@@ -920,10 +912,10 @@ class CodeGenerator(BaseVisitor, Utils):
             ''.join(self.buff_methods)
         )
 
-        # <clinit>
-        self.main_emitter.buffer(
-            ''.join(self.generateclinit())
-        )
+        # # <clinit>
+        # self.main_emitter.buffer(
+        #     ''.join(self.generateclinit())
+        # )
 
         # write to the buffer
         # write MiniGoClass
@@ -1096,6 +1088,9 @@ class CodeGenerator(BaseVisitor, Utils):
         # add the <init> MiniGoClass
         self.initCLass()
 
+        # <clinit>
+        self.generateclinit()
+
         return
         env ={}
         env['env'] = [c]
@@ -1138,7 +1133,7 @@ class CodeGenerator(BaseVisitor, Utils):
                 # a frame is related to method
                 # then, this is just simulated frame
                 # not generate with method
-                _, var_type = self.visitExpr(expr, (self.main_emitter, fake_frame))
+                _, var_type = self.visitExpr(expr, (self.main_emitter, fake_frame, scope))
             
             # Now I have the type
             # int, bool, float, String, Dog, Animal
@@ -1179,6 +1174,212 @@ class CodeGenerator(BaseVisitor, Utils):
         else:
             # normal logic
             self.visit(ast, o)
+
+
+    def visiStmt(self, ast, o):
+        # wrapper of statements
+        # just return the code
+        # the parent will link that
+        # to the method/function/if/for
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        if isinstance(ast, FuncCall):
+            # just do the same as the expression
+            # but don't return the type
+            # and we would ignore the value returned back
+            # but this is ensured
+            code = list()
+            static_method = self.findFunction(ast.funName)
+
+            result, typ = self.visitExpr(ast, o)
+
+            code.append(result)
+            if not isinstance(static_method.result, VoidType):
+                code.append(
+                    emitter.emitPOP(frame)
+                )
+            
+            return ''.join(code)
+
+
+        elif isinstance(ast, MethCall):
+            # same as expression
+            # no need to get the result type -> skip
+            # in the case of expression, we have to get
+            # the result type
+            code = list()
+
+            result, typ = self.visitExpr(ast, o)
+            code.append(result)
+
+            if not isinstance(typ, VoidType):
+                code.append(
+                    emitter.emitPOP(frame)
+                )
+
+            return ''.join(code)
+
+        else:
+
+            return self.visit(ast, o)
+
+
+    def visitExpr(self, ast, o):
+        # wrapper of expression
+        emitter : Emitter = o[0]
+        frame   : Frame   = o[1]
+        scope   : Scope   = o[2]
+        if isinstance(ast, Id):
+            # special treat
+            # must resolve using the Scope
+            # Check for the type and load it from the
+            # local variable array or heap if Object
+            # as we are backed by JVM (OOP virtual machine)
+            # then have to check it is static/local
+            # local -> index
+            # static -> getfield
+            code = list()
+            name = ast.name
+            
+            # check for the scope
+            symbol : Symbol = scope.look_up(name)
+            if symbol.is_static:
+                code.append(
+                    emitter.emitGETSTATIC(symbol.getStaticName(), symbol.mtype, frame)
+                )
+
+            else:
+                # local variable
+                # debug
+                # print(symbol.name)
+                # print(emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame))
+                code.append(
+                    emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame)
+                )
+
+            
+            return ''.join(code), self.visitType(symbol.mtype, o)
+
+
+        elif isinstance(ast, FieldAccess):
+            # get field
+            expr = ast.receiver
+            name = ast.field
+
+            result, result_type = self.visitExpr(expr, o)
+            code = list()
+
+            code.append(
+                result
+            )
+
+            field = self.findField(result_type.name, name)
+
+            # then getfield
+            code.append(
+                emitter.emitGETFIELD('/'.join([result_type.name, name]), field.mtype, frame)
+            )
+
+            return ''.join(code), self.visitType(field.mtype, o)
+        
+
+        elif isinstance(ast, FuncCall):
+            name = ast.funName
+            arguments = ast.args
+
+            static_method = self.findFunction(name)
+            code = list()
+            for arg in arguments:
+                result, typ = self.visitExpr(arg, o)
+                # if isinstance(typ, IntType) and isinstance()
+                code.append(result)
+            
+            code.append(emitter.emitINVOKESTATIC(static_method.invoke(), static_method, frame))
+
+            return ''.join(code), self.visitType(static_method.result, o)
+
+
+        elif isinstance(ast, MethCall):
+            # debug
+            # print('check')
+            code = list()
+
+            expr = ast.receiver
+            name = ast.metName
+            arguments = ast.args
+            interface_count = 1
+
+            result, typ = self.visitExpr(expr, o)
+            typ = self.visitType(typ, o)
+
+            code.append(result)
+
+            for arg in arguments:
+                interface_count += 1
+                result_arg, typ_arg = self.visitExpr(arg, o)
+                code.append(result_arg)
+
+            if isinstance(typ, Class):
+                # print(typ.name)
+                # print(name)
+                method = self.findMethod(typ.name, name)
+                # print(method.result.name)
+                code.append(
+                    emitter.emitINVOKEVIRTUAL(method.invoke(), method, frame)
+                )
+
+
+                return ''.join(code), self.visitType(method.result, o)
+
+            elif isinstance(typ, Interface):
+                method = self.findMethodI(typ.name, name)
+
+                code.append(
+                    emitter.emit_invoke_interface(method.invoke(), method, frame)
+                )
+
+            
+                return ''.join(code), self.visitType(method.result, o)
+
+
+        elif isinstance(ast, ArrayCell):
+            expr = ast.arr      # array expression
+            indexes = ast.idx   # list of index expressions
+
+            code = []
+
+            arr_code, arr_type = self.visitExpr(expr, o)
+
+            getType = self.getAccessType(arr_type, indexes)
+            code.append(arr_code)
+
+            for i, index_expr in enumerate(indexes):
+                index_code, _ = self.visitExpr(index_expr, o)
+
+                # evaluate the value of index
+                code.append(index_code)
+
+                # final -> load
+                is_last = (i == len(indexes) - 1)
+                if is_last:
+                    # get the wanted, it can be the sub array
+                    # or it can be the final one
+
+                    code.append(
+                        emitter.emit_load_value_from_array(getType, frame)
+                    )
+
+                else:
+                    # sub array
+                    code.append(
+                        emitter.emit_load_value_from_array(arr_type, frame)
+                    )
+
+            return ''.join(code), self.getAccessType(arr_type, indexes)
+
+
+        else:
+            return self.visit(ast, o)
 
 
     def findFunction(self, name):
@@ -1264,6 +1465,14 @@ class CodeGenerator(BaseVisitor, Utils):
         code.append(
             self.visit(body, (self.main_emitter, frame, scope))
         )
+
+        # adding the return
+        if type(ast.retType) is VoidType:
+            # self.main_emitter.emitWRITEVAR
+            code.append(
+                self.main_emitter.emitRETURN(VOID, frame)
+            )
+            # self.emit.printout(self.emit.emitRETURN(VoidType(), frame)) 
 
 
         code.append(
@@ -1389,6 +1598,15 @@ class CodeGenerator(BaseVisitor, Utils):
         code.append(
             self.visit(body, (emitter, frame, scope))
         )
+
+
+        # adding the return
+        if type(ast.fun.retType) is VoidType:
+            # self.main_emitter.emitWRITEVAR
+            code.append(
+                emitter.emitRETURN(VOID, frame)
+            )
+            # self.emit.printout(self.emit.emitRETURN(VoidType(), frame)) 
 
         code.append(
             emitter.emitLABEL(frame.getEndLabel(), frame)
@@ -1540,6 +1758,26 @@ class CodeGenerator(BaseVisitor, Utils):
             real_type = self.visitType(typ, o)
             final_type = real_type
 
+            if isinstance(typ, ArrayType):
+                # we have to generate the multiarray
+                dimen = typ.dimens
+                ele = typ.eleType
+
+                for d in dimen:
+                    code_dimen, code_type = self.visitExpr(d, o)
+
+                    code.append(
+                        code_dimen
+                    )
+
+                code.append(
+                    emitter.emit_multi_array(real_type, dimen, frame)
+                )
+
+                code.append(
+                    emitter.emitWRITEVAR(name, real_type, index, frame)
+                )
+
         elif expr and not typ:
             # generate based on expression
             # getting the type from the expression
@@ -1605,57 +1843,93 @@ class CodeGenerator(BaseVisitor, Utils):
         OR      = '||'
 
 
-    def visiStmt(self, ast, o):
-        # wrapper of statements
-        # just return the code
-        # the parent will link that
-        # to the method/function/if/for
-        emitter : Emitter = o[0]
-        frame : Frame = o[1]
-        if isinstance(ast, FuncCall):
-            # just do the same as the expression
-            # but don't return the type
-            # and we would ignore the value returned back
-            # but this is ensured
-            code = list()
-            static_method = self.findFunction(ast.funName)
-
-            result, typ = self.visitExpr(ast, o)
-
-            code.append(result)
-            if not isinstance(static_method.result, VoidType):
-                code.append(
-                    emitter.emitPOP(frame)
-                )
-            return ''.join(code)
-
-        elif isinstance(ast, MethCall):
-            # same as expression
-            # no need to get the result type -> skip
-            # in the case of expression, we have to get
-            # the result type
-            code = list()
-
-            result, typ = self.visitExpr(ast, o)
-            code.append(result)
-
-            if not isinstance(typ, VoidType):
-                code.append(
-                    emitter.emitPOP(frame)
-                )
-
-            return ''.join(code)
-
-        else:
-            return self.visit(ast, o)
-        
-
     def generateclinit(self):
         ast = self.astTree
         # going through VarDecl and ConstDecl
         # to create the code of expression and
         # put the value to the getstatic
-        return []
+
+        frame = Frame('<clinit>', VOID)
+        scope : Scope = Scope()
+        method_type = Method('<clinit>', [], VOID, self.className)
+
+        self.buff_methods.append(
+            self.main_emitter.emitMETHOD('<clinit>', method_type, True, frame)
+        )
+        # scope of this method
+        frame.enterScope(True)
+
+        # NOTE: JVM will automatically push <this> for us
+        # frame simulates the operand stack
+        # this_index = frame.getNewIndex()
+        # this_type  = Id(self.className)
+        # .var is used for debugging
+        
+        # put label, for other methods, functions
+        # scope are different
+        # NOTE
+        self.buff_methods.append(
+            self.main_emitter.emitLABEL(frame.getStartLabel(), frame)
+        )
+
+
+        for decl in self.astTree.decl:    
+            if isinstance(decl, VarDecl):
+                expr = decl.varInit
+                if expr:
+                    result, typ = self.visitExpr(expr, (self.main_emitter, frame, scope))
+                    symbol = Symbol(decl.varName, typ, -1, True)
+                    
+                    scope.add(symbol)
+
+                    self.buff_methods.append(
+                        result
+                    )
+
+                    self.buff_methods.append(
+                        self.main_emitter.emitPUTSTATIC(symbol.getStaticName(), typ, frame)
+                    )
+
+            elif isinstance(decl, ConstDecl):
+                name = decl.conName
+                expr = decl.iniExpr
+
+                result, typ = self.visitExpr(expr, (self.main_emitter, frame, scope))
+                symbol = Symbol(name, typ, -1, True)
+                scope.add(symbol)
+
+                self.buff_methods.append(
+                        result
+                )
+
+                self.buff_methods.append(
+                        self.main_emitter.emitPUTSTATIC(symbol.getStaticName(), typ, frame)
+                    )
+
+            else:
+
+                pass
+
+
+        self.buff_methods.append(
+            self.main_emitter.emitLABEL(
+                frame.getEndLabel(), frame
+            )
+        )
+
+        self.buff_methods.append(
+            self.main_emitter.emitRETURN(
+                VOID, frame
+            )
+        )
+
+        # end of the method
+        self.buff_methods.append(
+            self.main_emitter.emitENDMETHOD(
+                frame
+            )
+        )
+        frame.exitScope()
 
 
     def findField(self, className, fieldName):
@@ -1663,124 +1937,16 @@ class CodeGenerator(BaseVisitor, Utils):
         return next(filter(lambda field: fieldName == field.name, listField), None)
 
 
-    def visitExpr(self, ast, o):
-        # wrapper of expression
-        emitter : Emitter = o[0]
-        frame   : Frame   = o[1]
-        scope   : Scope   = o[2]
-        if isinstance(ast, Id):
-            # special treat
-            # must resolve using the Scope
-            # Check for the type and load it from the
-            # local variable array or heap if Object
-            # as we are backed by JVM (OOP virtual machine)
-            # then have to check it is static/local
-            # local -> index
-            # static -> getfield
-            code = list()
-            name = ast.name
-            
-            # check for the scope
-            symbol : Symbol = scope.look_up(name)
-            if symbol.is_static:
-                code.append(
-                    emitter.emitGETSTATIC(symbol.getStaticName(), symbol.mtype, frame)
-                )
+    def getAccessType(self, typ : ArrayType, index):
+        dimen_type = len(typ.dimens)
+        dimen_index = len(index)
 
-            else:
-                # local variable
-                # debug
-                # print(symbol.name)
-                # print(emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame))
-                code.append(
-                    emitter.emitREADVAR(symbol.name, symbol.mtype, symbol.index, frame)
-                )
-
-            
-            return ''.join(code), symbol.mtype
-
-
-        elif isinstance(ast, FieldAccess):
-            # get field
-            expr = ast.receiver
-            name = ast.field
-
-            result, result_type = self.visitExpr(expr, o)
-            code = list()
-
-            code.append(
-                result
-            )
-
-            field = self.findField(result_type.name, name)
-
-            # then getfield
-            code.append(
-                emitter.emitGETFIELD('/'.join([result_type.name, name]), field.mtype, frame)
-            )
-
-            return ''.join(code), field.mtype
-        
-
-        elif isinstance(ast, FuncCall):
-            name = ast.funName
-            arguments = ast.args
-
-            static_method = self.findFunction(name)
-            code = list()
-            for arg in arguments:
-                result, typ = self.visitExpr(arg, o)
-                # if isinstance(typ, IntType) and isinstance()
-                code.append(result)
-            
-            code.append(emitter.emitINVOKESTATIC(static_method.invoke(), static_method, frame))
-
-            return ''.join(code), self.visitType(static_method.result, o)
-
-
-        elif isinstance(ast, MethCall):
-            # debug
-            # print('check')
-            code = list()
-
-            expr = ast.receiver
-            name = ast.metName
-            arguments = ast.args
-            interface_count = 1
-
-
-            result, typ = self.visitExpr(expr, o)
-
-            code.append(result)
-
-            for arg in arguments:
-                interface_count += 1
-                result_arg, typ_arg = self.visitExpr(arg, o)
-                code.append(result_arg)
-
-            if isinstance(typ, Class):
-                # print(typ.name)
-                # print(name)
-                method = self.findMethod(typ.name, name)
-                # print(method.result.name)
-                code.append(
-                    emitter.emitINVOKEVIRTUAL(method.invoke(), method, frame)
-                )
-
-
-                return ''.join(code), self.visitType(method.result, o)
-
-            elif isinstance(typ, Interface):
-                method = self.findMethodI(typ.name, name)
-
-                code.append(
-                    emitter.emit_invoke_interface(method.invoke(), method, frame)
-                )
-                return ''.join(code), self.visitType(method.result, o)
-
+        value = dimen_type - dimen_index
+        if value == 0:
+            return typ.eleType
         
         else:
-            return self.visit(ast, o)
+            return ArrayType([True for i in range(value)], typ.eleType)
 
 
     # normal expr
@@ -1830,24 +1996,6 @@ class CodeGenerator(BaseVisitor, Utils):
         return emitter.emitPUSHCONST(value, STRTYPE, frame), STRTYPE
     
 
-    # normal expr
-    # don't care about the size
-    # it is just the Object
-    # create a new object of array literal
-    # but we need either the dimen or the initialization
-    # the size can be found at run-time, so
-    # it is ok about that
-    # [3][4][5][6]int{} -> static check would ensure
-    # this is totally correct
-    
-    # we are sure that the type is correct
-    # [5][2]int {{2, 3}, {4, 5}, {6, 7}, {3, 2}, {5, 6}}
-    # Based on the dimension, and collect the list?
-
-    # from the array literal -> deduce size -> difficult?
-    # we have [expr][expr][expr]int -> create from that
-    # and because the value to be corrected, then no need
-    # to worry about that
     def visitArrayLiteral(self, ast, o):
         emitter: Emitter = o[0]
         frame: Frame = o[1]
@@ -2280,6 +2428,7 @@ class CodeGenerator(BaseVisitor, Utils):
             op == CodeGenerator.Operator.GTE.value or \
             op == CodeGenerator.Operator.LTE.value :
             # just handle the case of int first
+            # always true for str and float
             code.append(
                 result_x
             )
@@ -2292,14 +2441,20 @@ class CodeGenerator(BaseVisitor, Utils):
                 code.append(
                     emitter.emitREOP(op, INTTYPE, frame)
                 )
-                return ''.join(code), BOOLTYPE
 
             elif identical(type_x, FLOATTYPE) and identical(type_y, FLOATTYPE):
-                pass
+                
+                code.append(
+                    emitter.emit_bool_cal_true(frame), BOOLTYPE
+                )
 
             elif identical(type_x, STRTYPE) and identical(type_y, STRTYPE):
                 
-                pass
+                code.append(
+                    emitter.emit_bool_cal_true(frame), BOOLTYPE
+                )
+
+            return ''.join(code), BOOLTYPE
 
         elif op == CodeGenerator.Operator.AND.value or \
             op == CodeGenerator.Operator.OR.value:
@@ -2382,7 +2537,17 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitConstDecl(self, ast, o):
-        return None
+        name = ast.conName
+        expr = ast.iniExpr
+
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        scope : Scope = o[2]
+
+        # same logic with VarDecl
+        # final keyword -> compile-time checking
+        temp = VarDecl(name, None, expr)
+        return self.visiStmt(temp, o)
 
 
     def visitType(self, ast, o):
@@ -2532,22 +2697,169 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
         elif isinstance(lhs, ArrayCell):
-            pass
+            code = list()
 
+            expr = lhs.arr
+            indexes = lhs.idx
 
-        # check if the right-hand side is declared
-        # declared -> get that value and modified
-        # not declared -> declared that with the value of expr
+            # array code
+            array_code, array_type = self.visitExpr(expr, o)
+            access_type = self.getAccessType(array_type, indexes)
 
-        # if left-hand side is object
-        # array access
+            # load the [][][] except the last one, ref
+            code.append(array_code)
 
-        # return the code to modify the value
-        return ''
+            for i, idx_expr in enumerate(indexes[:-1]):
+                idx_code, _ = self.visitExpr(idx_expr, o)
+                code.append(idx_code)
+                code.append(
+                    emitter.emit_load_value_from_array(array_type, frame)
+                )
+
+            # evaluate final index
+            final_idx_code, _ = self.visitExpr(indexes[-1], o)
+            code.append(final_idx_code)
+
+            # evaluate RHS value
+            rhs_code, rhs_type = self.visitExpr(rhs, o)
+            code.append(rhs_code)
+
+            # emit store instruction
+            code.append(
+                emitter.emit_store_value_to_array(access_type, frame)
+            )
+
+            return ''.join(code)
 
 
     def visitIf(self, ast, o):
-        return None
+        cond_ = ast.expr
+        then_ = ast.thenStmt
+        else_ = ast.elseStmt
+
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        scope : Scope = o[2]
+
+        code = list()
+
+        end_label = frame.getNewLabel()
+
+        if not else_:
+            cond_code, cond_type = self.visitExpr(cond_, o)
+            
+            code.append(
+                cond_code
+            )
+
+            code.append(
+                emitter.emitIFFALSE(end_label, frame)
+            )
+
+            # back
+            frame.enterScope(False)
+            # new scope
+            code.append(
+                emitter.emitLABEL(frame.getStartLabel(), frame)
+            )
+            scope.new_scope()
+
+            # code inside
+            code.append(
+                self.visit(then_, o)
+            )
+
+            code.append(
+                emitter.emitGOTO(end_label, frame)
+            )
+
+            scope.out_scope()
+            code.append(
+                emitter.emitLABEL(frame.getEndLabel(), frame)
+            )
+
+            frame.exitScope()
+
+            code.append(
+                emitter.emitLABEL(end_label, frame)
+            )
+
+            return ''.join(code)
+
+        else:
+            # there is still else_
+            else_label = frame.getNewLabel()
+            cond_code, cond_type = self.visitExpr(cond_, o)
+            
+            code.append(
+                cond_code
+            )
+
+            code.append(
+                emitter.emitIFFALSE(else_label, frame)
+            )
+
+            # back
+            frame.enterScope(False)
+            # new scope
+            code.append(
+                emitter.emitLABEL(frame.getStartLabel(), frame)
+            )
+            scope.new_scope()
+
+            # code inside
+            code.append(
+                self.visit(then_, o)
+            )
+
+            code.append(
+                emitter.emitGOTO(end_label, frame)
+            )
+
+            scope.out_scope()
+            code.append(
+                emitter.emitLABEL(frame.getEndLabel(), frame)
+            )
+            frame.exitScope()
+
+
+            code.append(
+                emitter.emitLABEL(else_label, frame)
+            )
+
+
+            if isinstance(else_, If):
+                # if it is another If
+                # then just add this code to the main
+                code.append(
+                    self.visit(else_, o)
+                )
+
+            else:
+                # Block
+                # for the else part, if it is just a block
+                frame.enterScope(False)
+                scope.new_scope()
+                code.append(
+                    emitter.emitLABEL(frame.getStartLabel(), frame)
+                )
+
+                # visit the block
+                code.append(
+                    self.visit(else_, o)
+                )
+
+                code.append(
+                    emitter.emitLABEL(frame.getEndLabel(), frame)
+                )
+                scope.out_scope()
+                frame.exitScope()
+            
+            code.append(
+                emitter.emitLABEL(end_label, frame)
+            )
+
+            return ''.join(code)
 
 
     def visitForBasic(self, ast, o):
@@ -2559,7 +2871,7 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitForEach(self, ast, o):
-        return None
+        return ''
     
 
     def visitContinue(self, param):

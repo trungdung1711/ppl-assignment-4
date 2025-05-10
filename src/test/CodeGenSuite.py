@@ -483,79 +483,673 @@ class CheckCodeGenSuite(unittest.TestCase):
     #     self.assertTrue(TestCodeGen.test(input, expect, 520))
 
 
-    def test_521(self):
+    # def test_521(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var h = Human {name : "Zun", age : 18}
+    #         putStringLn(h.name)
+    #         h.name := "Changed"
+    #         h.age := 100
+    #         putStringLn(h.name)
+    #         putIntLn(h.age)
+
+    #         h.name := "Dung" + " " + "Le"
+
+    #         putStringLn(h.name)
+    #         return
+    #     }
+
+    #     type Human struct {
+    #         name string
+    #         age int
+    #         parents [4]Human
+    #     }
+    #     '''
+
+    #     expect = 'Zun\nChanged\n100\nDung Le\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 521))
+
+
+    # def test_522(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 522))
+
+
+    # def test_523(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         // var arr [3]int = [3]int{1, 2, 3}
+    #         // var arr [4]float = [4]float{3.4, 3.2, 3.4, 5.6}
+    #         // var arr [3]boolean = [3]boolean{true, false, true, false}
+    #         // var arr [2]string = [2]string{"This", "is"}
+    #         // var arr [5]int = [5]int{1, 2, 3, 4, 5}
+
+    #         var arr [2][2][2]float = [2][2][2]float {{{1.6, 2.1}, {3.3, 4.4}}, {{5.6, 6.7}, {7.4, 8.3}}}
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 523))
+
+
+    # def test_524(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a [4]int = [4]int{1, 2, 3, 4}
+    #         var result = a[2]
+    #         putIntLn(result)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '3\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 524))
+
+
+    # def test_525(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         a := [3][3]float {{1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}}
+    #         putFloatLn(a[1][1])
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '2.0\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 525))
+
+
+    # def test_526(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         ARRAY := [3][3]float {{1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}}
+    #         putFloatLn(ARRAY[2][2])
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '3.0\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 526))
+
+
+    # def test_527(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var people [4]Human = [4]Human{ Human{name : "Zun"}, Human{name : "Zun"}, Human{name : "Zun"}, Human{name : "Zun"} }
+    #         people[0] := people[1]
+    #         people[1].name := "Changed"
+
+    #         people[0] := Human{}
+    #         people[0].name := "Kiky"
+    #         people[0].name += "o"
+
+
+    #         putStringLn(people[0].name)
+    #         return
+    #     }
+
+    #     type Human struct {
+    #         name string
+    #     }
+    #     '''
+
+    #     expect = 'Kikyo\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 527))
+
+
+    # def test_528(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var youkai [2]Youkai
+    #         youkai[0] := Naraku{damage : 100}
+    #         youkai[1] := Jaken{damage : 50}
+
+    #         // putIntLn(youkai[0].damage)
+
+    #         putInt(youkai[0].attack(youkai[1]))
+
+    #         return
+    #     }
+
+    #     type Naraku struct {
+    #         damage int
+    #     }
+
+    #     type Jaken struct {
+    #         damage int
+    #     }
+
+    #     func (j Jaken) attack(y Youkai) int {
+    #         return 20
+    #     }
+
+    #     func (n Naraku) attack(y Youkai) int {
+    #         return 1000
+    #     }
+
+    #     type Youkai interface {
+    #         attack(y Youkai) int
+    #     }
+    #     '''
+
+    #     expect = '1000'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 528))
+
+
+    # def test_529(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var arr [5][5]int
+    #         arr[0][0] := 100
+    #         arr[4][4] := 500
+
+    #         arr[2][2] := arr[0][0] + arr[4][4]
+    #         putInt(arr[2][2])
+
+    #         var index = 2
+    #         arr[2-1*2][4-3] := 99
+
+    #         putInt(arr[0][1])
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '60099'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 529))
+
+
+    # def test_530(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var arr [4]string
+    #         arr[0] := "This"
+    #         arr[1] := " is"
+    #         arr[2] := " a"
+    #         arr[3] := " string"
+
+    #         putStringLn(arr[0] + arr[1] + arr[2] + arr[3])
+    #         return
+    #     }
+
+    #     func getRandom(seed int) int {
+    #         return ((seed*2)-(seed*3))%(seed-44)*(22)-(43 * 23)
+    #     }
+    #     '''
+
+    #     expect = 'This is a string\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 530))
+
+
+    # def test_531(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var demons [2]Youkai
+
+    #         demons[0] := Naraku{damage: 999}
+    #         demons[1] := Jaken{damage: 1}
+
+    #         // change damage using method call
+    #         demons[1] := demons[1].evolve(10)
+
+    #         putIntLn(demons[0].attack(demons[1]))  // Expect 9990
+    #         // putIntLn(demons[1].damage)             // Expect 11
+
+    #         var names [3]string
+    #         names[0] := "Inu"
+    #         names[1] := "Yasha"
+    #         names[2] := "!"
+
+    #         putStringLn(names[0] + names[1] + names[2]) // InuYasha!
+
+    #         var grid [2][2]int
+    #         grid[1][1] := 100
+    #         grid[0][0] := 50
+    #         putIntLn(grid[0][0] + grid[1][1]) // 150
+
+    #         return
+    #     }
+
+    #     type Youkai interface {
+    #         attack(y Youkai) int
+    #         evolve(amount int) Youkai
+    #     }
+
+    #     type Naraku struct {
+    #         damage int
+    #     }
+
+    #     type Jaken struct {
+    #         damage int
+    #     }
+
+    #     func (n Naraku) attack(y Youkai) int {
+    #         return n.damage * 10
+    #     }
+
+    #     func (n Naraku) evolve(a int) Youkai {
+    #         return Naraku{damage: n.damage + a}
+    #     }
+
+    #     func (j Jaken) attack(y Youkai) int {
+    #         return j.damage * 2
+    #     }
+
+    #     func (j Jaken) evolve(a int) Youkai {
+    #         return Jaken{damage: j.damage + a}
+    #     }
+    #     '''
+
+    #     expect = '9990\nInuYasha!\n150\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 531))
+
+
+    # def test_532(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var w Weapon = Tenseiga{dam: 888.8, heal: 42}
+    #         putFloatLn(w.getDamage())    // 888.8
+    #         putIntLn(w.getSpecial())     // 42
+
+    #         w := Bakusaiga{dam: 1000.5, poison: 3}
+    #         putFloatLn(w.getDamage())    // 1000.5
+    #         putIntLn(w.getSpecial())     // 300
+
+    #         // Struct-specific method not in interface
+    #         var b Bakusaiga = Bakusaiga{dam: 900.0, poison: 4}
+    #         putFloatLn(b.getPoisonedDamage()) // 3600.0
+
+    #         return
+    #     }
+
+    #     type Tenseiga struct {
+    #         dam float
+    #         heal int
+    #     }
+
+    #     func (t Tenseiga) getDamage() float {
+    #         return t.dam
+    #     }
+
+    #     func (t Tenseiga) getSpecial() int {
+    #         return t.heal
+    #     }
+
+    #     type Bakusaiga struct {
+    #         dam float
+    #         poison int
+    #     }
+
+    #     func (b Bakusaiga) getDamage() float {
+    #         return b.dam
+    #     }
+
+    #     func (b Bakusaiga) getSpecial() int {
+    #         return b.poison * 100
+    #     }
+
+    #     func (b Bakusaiga) getPoisonedDamage() float {
+    #         var poison float = b.poison
+    #         return b.dam * poison
+    #     }
+
+    #     type Weapon interface {
+    #         getDamage() float
+    #         getSpecial() int
+    #     }
+    #     '''
+
+    #     expect = '888.8\n42\n1000.5\n300\n3600.0\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 532))
+
+
+
+    # def test_533(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         const a = 100
+    #         const b = 200
+    #         var a int = ((a + b)/3)%2
+    #         putInt(a)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '0'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 533))
+
+
+    # def test_534(self):
+    #     input = \
+    #     '''
+    #     var a int = 100
+    #     const PI = 3.14
+    #     var seed int = 2
+    #     const NAME = "NAME"
+    #     var value = getRan(seed)
+
+
+    #     func main() {
+    #         putInt(a)
+    #         putFloat(PI)
+    #         return
+    #     }
+
+    #     func getRan(seed int) int {
+    #         return (100*6)*seed%(seed-400)
+    #     }
+    #     '''
+
+    #     expect = '1003.14'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 534))
+
+
+    # def test_535(self):
+    #     input = \
+    #     '''
+    #     var a int = getInt1()
+    #     var b float = getFloat1()
+    #     const C = a + b
+    #     const D = C + 13.2
+
+    #     func getInt1() int {
+    #         return 5
+    #     }
+
+    #     func getFloat1() float {
+    #         return 3 - 5 + 10 - 5.0
+    #     }
+
+    #     func main() {
+    #         a := 99
+    #         b := 100.0
+    #         putInt(a)
+    #         putFloat(b)
+    #         putFloat(C)
+    #         putFloat(D)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '99100.08.021.2'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 535))
+
+
+    # def test_536(self):
+    #     input = \
+    #     '''
+    #     var a = GetShikonNoTama()
+
+    #     func main() {
+    #         putInt(a.youryoku)
+    #         a.youryoku += 100
+    #         putInt(a.youryoku)
+
+    #         Run()
+
+    #         return
+    #     }
+
+    #     func Run() {
+    #         var a = 100
+    #         var b = 200
+    #         var c = a + b
+
+    #         var arr = [5]int{1, 2, 3, 4, 5}
+    #         arr[0] := a
+    #         arr[1] := b
+    #         arr[2] := c
+    #         putInt(arr[0] + arr[1] + arr[2])
+    #     }
+
+    #     func GetShikonNoTama() ShikonNoTama {
+    #         return ShikonNoTama{youryoku : 100}
+    #     }
+
+    #     type ShikonNoTama struct {
+    #         youryoku int
+    #     }
+    #     '''
+
+    #     expect = '100200600'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 536))
+
+
+    # def test_537(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a boolean = ( true && false ) || false && false && (false || false && true)
+
+    #         if (!a) {
+    #             putStringLn("false")
+    #         }
+
+    #         var a int = 100
+
+    #         if (a == (100 + 100 - 100)) {
+    #             putStringLn("Value a = 100")
+    #         }
+
+    #         return
+    #     }
+    #     '''
+
+    #     expect = 'false\nValue a = 100\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 537))
+
+
+    # def test_538(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 50
+    #         if (a > 1) {
+    #             putInt(a)
+    #         }
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '50'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 538))
+
+
+    # def test_539(self):
+    #     input = \
+    #     '''
+    #     func returnInt() int {
+    #         // var a int = getInt()
+    #         return 100
+    #     }
+
+    #     func main() {
+    #         var a int = returnInt()
+    #         if (a < 100) {
+    #             putStringLn("<100")
+    #         } else if (a == 100) {
+    #             putStringLn("==100")
+    #         } else if (a > 100) {
+    #             putStringLn(">100")
+    #         } else {
+    #             putStringLn("else")
+    #         }
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '==100\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 539))
+
+
+    def test_540(self):
         input = \
         '''
         func main() {
-            var h = Human {name : "Zun", age : 18}
-            putStringLn(h.name)
-            h.name := "Changed"
-            h.age := 100
-            putStringLn(h.name)
-            putIntLn(h.age)
+            var a int = 100
+            if (a == 100) {
+                var b int = 200
+                a := b
+            }
 
-            h.name := "Dung" + " " + "Le"
-
-            putStringLn(h.name)
+            putIntLn(a)
             return
-        }
-
-        type Human struct {
-            name string
-            age int
-            parents [4]Human
         }
         '''
 
-        expect = 'Zun\nChanged\n100\nDung Le\n'
+        expect = '200\n'
 
-        self.assertTrue(TestCodeGen.test(input, expect, 521))
+        self.assertTrue(TestCodeGen.test(input, expect, 540))
 
 
-    def test_522(self):
+    def test_541(self):
         input = \
         '''
         func main() {
+            var score int = 85
+            var grade string
+
+            if (score >= 90) {
+                grade := "A"
+                putStringLn(grade)
+            } else if (score >= 80) {
+                grade := "B"
+                putStringLn(grade)
+            } else if (score >= 70) {
+                grade := "C"
+                putStringLn(grade)
+            } else {
+                grade := "F"
+                putStringLn(grade)
+            }
+
+            // Confirm outer variable remains unaffected
+            putStringLn(grade)
+
             return
         }
         '''
-
-        expect = ''
-
-        self.assertTrue(TestCodeGen.test(input, expect, 522))
+        expect = 'B\nB\n'
+        self.assertTrue(TestCodeGen.test(input, expect, 541))
 
 
-    def test_523(self):
+    def test_542(self):
         input = \
         '''
         func main() {
-            // var arr [3]int = [3]int{1, 2, 3}
-            // var arr [4]float = [4]float{3.4, 3.2, 3.4, 5.6}
-            // var arr [3]boolean = [3]boolean{true, false, true, false}
-            // var arr [2]string = [2]string{"This", "is"}
-            // var arr [5]int = [5]int{1, 2, 3, 4, 5}
+            var x int = 10
+            var y int = 20
+            var result string
 
-            var arr [2][2][2]float = [2][2][2]float {{{1.6, 2.1}, {3.3, 4.4}}, {{5.6, 6.7}, {7.4, 8.3}}}
+            if (x + y > 25) {
+                if (y - x == 10) {
+                    result := "Perfect match"
+                    putStringLn(result)
+                } else {
+                    result := "Close"
+                    putStringLn(result)
+                }
+            } else {
+                result := "Too small"
+                putStringLn(result)
+            }
+
+            putIntLn(x + y)
+
+            var condition boolean = true
+            if (condition) {
+                var status Status = Status{ok: true}
+                if (status.ok) {
+                    putStringLn("Status OK")
+                }
+            }
+
+            return
+        }
+
+        type Status struct {
+            ok boolean
+        }
+        '''
+
+        expect = 'Perfect match\n30\nStatus OK\n'
+
+        self.assertTrue(TestCodeGen.test(input, expect, 542))
+
+
+    def test_543(self):
+        input = \
+        '''
+        func main() {
+            var a int = 5
+            var b int = 10
+            var msg string = ""
+
+            if (a < b) {
+                if (b - a > 3) {
+                    if ((a * 2) == b) {
+                        msg := "Deep Match"
+                        putStringLn(msg)
+                    } else {
+                        msg := "Level 3 mismatch"
+                        putStringLn(msg)
+                    }
+                } else {
+                    msg := "Level 2 condition failed"
+                    putStringLn(msg)
+                }
+            } else {
+                msg := "Top-level condition failed"
+                putStringLn(msg)
+            }
+
+            putStringLn("Done")
             return
         }
         '''
 
-        expect = ''
+        expect = 'Deep Match\nDone\n'
 
-        self.assertTrue(TestCodeGen.test(input, expect, 523))
+        self.assertTrue(TestCodeGen.test(input, expect, 543))
 
-
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
-
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
 
 
     # def test_516(self):
@@ -583,46 +1177,7 @@ class CheckCodeGenSuite(unittest.TestCase):
 
     #     self.assertTrue(TestCodeGen.test(input, expect, 516))
 
-
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
-
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
-
-
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
-
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
-
-
-    # def test_516(self):
-    #     input = \
-    #     '''
-    #     func main() {
-    #         return
-    #     }
-    #     '''
-
-    #     expect = ''
-
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
-
-
+    
     # def test_516(self):
     #     input = \
     #     '''
