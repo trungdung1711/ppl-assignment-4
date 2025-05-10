@@ -2450,13 +2450,13 @@ class CodeGenerator(BaseVisitor, Utils):
             elif identical(type_x, FLOATTYPE) and identical(type_y, FLOATTYPE):
                 
                 code.append(
-                    emitter.emit_bool_cal_true(frame), BOOLTYPE
+                    emitter.emit_bool_cal_true(frame)
                 )
 
             elif identical(type_x, STRTYPE) and identical(type_y, STRTYPE):
                 
                 code.append(
-                    emitter.emit_bool_cal_true(frame), BOOLTYPE
+                    emitter.emit_bool_cal_true(frame)
                 )
 
             return ''.join(code), BOOLTYPE
