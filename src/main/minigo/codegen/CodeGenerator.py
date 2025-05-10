@@ -2863,7 +2863,52 @@ class CodeGenerator(BaseVisitor, Utils):
 
 
     def visitForBasic(self, ast, o):
-        return None
+        cond = ast.cond
+        body = ast.loop
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        scope : Scope = o[2]
+
+        code = list()
+
+        # prepare the continue label and break label
+        frame.enterLoop()
+        code.append(
+            emitter.emitLABEL(frame.getContinueLabel(), frame)
+        )
+
+        cond_code, cond_result = self.visitExpr(cond, o)
+
+        code.append(
+            cond_code
+        )
+
+        code.append(
+            emitter.emitIFFALSE(frame.getBreakLabel(), frame)
+        )
+
+        # back
+        # new scope
+        frame.enterScope(False)
+        scope.new_scope()
+
+        code.append(
+            self.visit(body, o)
+        )
+
+        scope.out_scope()
+        frame.exitScope()
+
+        code.append(
+            emitter.emitGOTO(frame.getContinueLabel(), frame)
+        )
+
+        code.append(
+            emitter.emitLABEL(frame.getBreakLabel(), frame)
+        )
+
+        frame.exitLoop()
+        return ''.join(code)
 
 
     def visitForStep(self, ast, o):
@@ -2874,12 +2919,16 @@ class CodeGenerator(BaseVisitor, Utils):
         return ''
     
 
-    def visitContinue(self, param):
-        return None
+    def visitContinue(self, ast, o):
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        return emitter.emitGOTO(frame.getContinueLabel(), frame)
 
 
-    def visitBreak(self, param):
-        return None
+    def visitBreak(self, ast, o):
+        emitter : Emitter = o[0]
+        frame : Frame = o[1]
+        return emitter.emitGOTO(frame.getBreakLabel(), frame)
 
 
     def visitReturn(self, ast, o):

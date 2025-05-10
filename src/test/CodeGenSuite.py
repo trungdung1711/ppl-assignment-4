@@ -1020,164 +1020,508 @@ class CheckCodeGenSuite(unittest.TestCase):
     #     self.assertTrue(TestCodeGen.test(input, expect, 539))
 
 
-    def test_540(self):
-        input = \
-        '''
-        func main() {
-            var a int = 100
-            if (a == 100) {
-                var b int = 200
-                a := b
-            }
-
-            putIntLn(a)
-            return
-        }
-        '''
-
-        expect = '200\n'
-
-        self.assertTrue(TestCodeGen.test(input, expect, 540))
-
-
-    def test_541(self):
-        input = \
-        '''
-        func main() {
-            var score int = 85
-            var grade string
-
-            if (score >= 90) {
-                grade := "A"
-                putStringLn(grade)
-            } else if (score >= 80) {
-                grade := "B"
-                putStringLn(grade)
-            } else if (score >= 70) {
-                grade := "C"
-                putStringLn(grade)
-            } else {
-                grade := "F"
-                putStringLn(grade)
-            }
-
-            // Confirm outer variable remains unaffected
-            putStringLn(grade)
-
-            return
-        }
-        '''
-        expect = 'B\nB\n'
-        self.assertTrue(TestCodeGen.test(input, expect, 541))
-
-
-    def test_542(self):
-        input = \
-        '''
-        func main() {
-            var x int = 10
-            var y int = 20
-            var result string
-
-            if (x + y > 25) {
-                if (y - x == 10) {
-                    result := "Perfect match"
-                    putStringLn(result)
-                } else {
-                    result := "Close"
-                    putStringLn(result)
-                }
-            } else {
-                result := "Too small"
-                putStringLn(result)
-            }
-
-            putIntLn(x + y)
-
-            var condition boolean = true
-            if (condition) {
-                var status Status = Status{ok: true}
-                if (status.ok) {
-                    putStringLn("Status OK")
-                }
-            }
-
-            return
-        }
-
-        type Status struct {
-            ok boolean
-        }
-        '''
-
-        expect = 'Perfect match\n30\nStatus OK\n'
-
-        self.assertTrue(TestCodeGen.test(input, expect, 542))
-
-
-    def test_543(self):
-        input = \
-        '''
-        func main() {
-            var a int = 5
-            var b int = 10
-            var msg string = ""
-
-            if (a < b) {
-                if (b - a > 3) {
-                    if ((a * 2) == b) {
-                        msg := "Deep Match"
-                        putStringLn(msg)
-                    } else {
-                        msg := "Level 3 mismatch"
-                        putStringLn(msg)
-                    }
-                } else {
-                    msg := "Level 2 condition failed"
-                    putStringLn(msg)
-                }
-            } else {
-                msg := "Top-level condition failed"
-                putStringLn(msg)
-            }
-
-            putStringLn("Done")
-            return
-        }
-        '''
-
-        expect = 'Deep Match\nDone\n'
-
-        self.assertTrue(TestCodeGen.test(input, expect, 543))
-
-
-
-    # def test_516(self):
+    # def test_540(self):
     #     input = \
     #     '''
     #     func main() {
+    #         var a int = 100
+    #         if (a == 100) {
+    #             var b int = 200
+    #             a := b
+    #         }
+
+    #         putIntLn(a)
     #         return
     #     }
     #     '''
 
-    #     expect = ''
+    #     expect = '200\n'
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+    #     self.assertTrue(TestCodeGen.test(input, expect, 540))
 
 
-    # def test_516(self):
+    # def test_541(self):
     #     input = \
     #     '''
     #     func main() {
+    #         var score int = 85
+    #         var grade string
+
+    #         if (score >= 90) {
+    #             grade := "A"
+    #             putStringLn(grade)
+    #         } else if (score >= 80) {
+    #             grade := "B"
+    #             putStringLn(grade)
+    #         } else if (score >= 70) {
+    #             grade := "C"
+    #             putStringLn(grade)
+    #         } else {
+    #             grade := "F"
+    #             putStringLn(grade)
+    #         }
+
+    #         // Confirm outer variable remains unaffected
+    #         putStringLn(grade)
+
+    #         return
+    #     }
+    #     '''
+    #     expect = 'B\nB\n'
+    #     self.assertTrue(TestCodeGen.test(input, expect, 541))
+
+
+    # def test_542(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var x int = 10
+    #         var y int = 20
+    #         var result string
+
+    #         if (x + y > 25) {
+    #             if (y - x == 10) {
+    #                 result := "Perfect match"
+    #                 putStringLn(result)
+    #             } else {
+    #                 result := "Close"
+    #                 putStringLn(result)
+    #             }
+    #         } else {
+    #             result := "Too small"
+    #             putStringLn(result)
+    #         }
+
+    #         putIntLn(x + y)
+
+    #         var condition boolean = true
+    #         if (condition) {
+    #             var status Status = Status{ok: true}
+    #             if (status.ok) {
+    #                 putStringLn("Status OK")
+    #             }
+    #         }
+
+    #         return
+    #     }
+
+    #     type Status struct {
+    #         ok boolean
+    #     }
+    #     '''
+
+    #     expect = 'Perfect match\n30\nStatus OK\n'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 542))
+
+
+    # def test_543(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 5
+    #         var b int = 10
+    #         var msg string = ""
+
+    #         if (a < b) {
+    #             if (b - a > 3) {
+    #                 if ((a * 2) == b) {
+    #                     msg := "Deep Match"
+    #                     putStringLn(msg)
+    #                 } else {
+    #                     msg := "Level 3 mismatch"
+    #                     putStringLn(msg)
+    #                 }
+    #             } else {
+    #                 msg := "Level 2 condition failed"
+    #                 putStringLn(msg)
+    #             }
+    #         } else {
+    #             msg := "Top-level condition failed"
+    #             putStringLn(msg)
+    #         }
+
+    #         putStringLn("Done")
     #         return
     #     }
     #     '''
 
-    #     expect = ''
+    #     expect = 'Deep Match\nDone\n'
 
-    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+    #     self.assertTrue(TestCodeGen.test(input, expect, 543))
+
+
+    # def test_544(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var a int = 0
+    #         var sum int = 0
+    #         for (a <= 100) {
+    #             sum := sum + a
+    #             a += 1
+    #         }
+
+    #         putInt(sum)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '5050'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 544))
+
+
+    # def test_545(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var arr [3][3]int = [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+    #         i := 0
+
+    #         sum := 0
+    #         for (i < 3) {
+    #             j := 0
+    #             for (j < 3) {
+    #                 sum += arr[i][j]
+    #                 j += 1
+    #             }
+    #             i += 1
+    #         }
+
+    #         putInt(sum)
+    #         return
+    #     }
+    #     '''
+
+    #     expect = '45'
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 545))
 
     
+    # def test_546(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var arr [10]int = [10]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+    #         const len = 10
+
+    #         i := 0
+    #         for (i < len - 1) {
+    #             j := i + 1
+    #             for (j < len) {
+    #                 if (arr[j] < arr[i]) {
+    #                     // find new min, swap
+    #                     temp := arr[i]
+    #                     arr[i] := arr[j]
+    #                     arr[j] := temp
+    #                 }
+    #                 j += 1
+    #             }
+    #             i += 1
+    #         }
+
+    #         PrintArray(arr, len)
+    #         return
+    #     }
+
+    #     func PrintArray(arr [10]int, len int) {
+    #         i := 0
+    #         for (i < len) {
+    #             putInt(arr[i])
+    #             putString(" ")
+    #             i += 1
+    #         }
+    #     }
+    #     '''
+
+    #     expect = '1 2 3 4 5 6 7 8 9 10 '
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 546))
+
+
+    # def test_547(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var matrix [3][3]int = [3][3]int{ {2, 4, 6}, {1, 3, 5}, {7, 9, 11}}
+
+    #         sum_main := 0
+    #         sum_anti := 0
+
+    #         i := 0
+    #         for (i < 3) {
+    #             sum_main += matrix[i][i]                  // main diagonal
+    #             sum_anti += matrix[i][2 - i]              // anti-diagonal
+    #             i += 1
+    #         }
+
+    #         putString("Main Diagonal Sum: ")
+    #         putInt(sum_main)
+    #         putString("\\n")
+
+    #         putString("Anti Diagonal Sum: ")
+    #         putInt(sum_anti)
+    #         putString("\\n")
+
+    #         return
+    #     }
+    #     '''
+
+    #     expect = "Main Diagonal Sum: 16\nAnti Diagonal Sum: 16\n"
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 547))
+
+
+    # def test_548(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         var arr [6]int = [6]int{10 , 8 ,2, 3, 1, 2}
+    #         const len = 6
+
+    #         mergeSort(arr, 0, len - 1)
+
+    #         printArray(arr, len)
+    #         return
+    #     }
+
+    #     func mergeSort(arr [6]int, left int, right int) {
+    #         if (left < right) {
+    #             mid := (left + right) / 2
+
+    #             mergeSort(arr, left, mid)
+    #             mergeSort(arr, mid + 1, right)
+    #             merge(arr, left, mid, right)
+    #         }
+    #     }
+
+    #     func merge(arr [6]int, left int, mid int, right int) {
+    #         n1 := mid - left + 1
+    #         n2 := right - mid
+
+    #         var L [3]int
+    #         var R [3]int
+
+    #         i := 0
+    #         for (i < n1) {
+    #             L[i] := arr[left + i]
+    #             i += 1
+    #         }
+
+    #         j := 0
+    #         for (j < n2) {
+    #             R[j] := arr[mid + 1 + j]
+    #             j += 1
+    #         }
+
+    #         i := 0
+    #         j := 0
+    #         k := left
+
+    #         for (i < n1 && j < n2) {
+    #             if (L[i] <= R[j]) {
+    #                 arr[k] := L[i]
+    #                 i += 1
+    #             } else {
+    #                 arr[k] := R[j]
+    #                 j += 1
+    #             }
+    #             k += 1
+    #         }
+
+    #         for (i < n1) {
+    #             arr[k] := L[i]
+    #             i += 1
+    #             k += 1
+    #         }
+
+    #         for (j < n2) {
+    #             arr[k] := R[j]
+    #             j += 1
+    #             k += 1
+    #         }
+    #     }
+
+    #     func printArray(arr [6]int, len int) {
+    #         i := 0
+    #         for (i < len) {
+    #             putInt(arr[i])
+    #             putString(" ")
+    #             i += 1
+    #         }
+    #     }
+    #     '''
+
+    #     expect = "1 2 2 3 8 10 "
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 548))
+
+
+    def test_549(self):
+        input = \
+        '''
+        func main() {
+            i := 0
+            for (i < 10) {
+                i += 1
+                if (i % 2 == 0) {
+                    continue
+                }
+                putInt(i)
+                putString(" ")
+            }
+        }
+        '''
+
+        expect = "1 3 5 7 9 "
+
+        self.assertTrue(TestCodeGen.test(input, expect, 549))
+
+
+    def test_550(self):
+        input = \
+        '''
+        func main() {
+            i := 1
+            sum := 0
+            for (i <= 10) {
+                if (i > 5) {
+                    break
+                }
+                sum += i
+                i += 1
+            }
+            putString("Sum till 5: ")
+            putInt(sum)
+        }
+        '''
+
+        expect = "Sum till 5: 15"
+
+        self.assertTrue(TestCodeGen.test(input, expect, 550))
+
+
+    def test_551(self):
+        input = \
+        '''
+        func main() {
+            Print(50)
+        }
+
+        func Print(value int) {
+            i := 0
+            for (i < value) {
+                i += 1
+                if ( i % 2 == 0) {
+                    continue
+                } else if (i == 9) {
+                    putString("Invalid")
+                } else if ( i == 20) {
+                    break
+                } else {
+                    putInt(i)
+                }
+            }
+        }
+        '''
+
+        expect = '1357Invalid1113151719212325272931333537394143454749'
+
+        self.assertTrue(TestCodeGen.test(input, expect, 551))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
+    # def test_516(self):
+    #     input = \
+    #     '''
+    #     func main() {
+    #         return
+    #     }
+    #     '''
+
+    #     expect = ''
+
+    #     self.assertTrue(TestCodeGen.test(input, expect, 516))
+
+
     # def test_516(self):
     #     input = \
     #     '''
